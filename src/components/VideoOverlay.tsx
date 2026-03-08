@@ -13,9 +13,20 @@ export default function VideoOverlay({
   const [playing, setPlaying] = useState(true)
   const [muted, setMuted] = useState(true)
   const [progress, setProgress] = useState(0)
+  const [showControls, setShowControls] = useState(true)
 
   function getVideo(el: any) {
     return el.closest(".video-container")?.querySelector("video")
+  }
+
+  function revealControls() {
+
+    setShowControls(true)
+
+    setTimeout(() => {
+      setShowControls(false)
+    }, 2000)
+
   }
 
   function togglePlay(e: any) {
@@ -33,6 +44,8 @@ export default function VideoOverlay({
       setPlaying(false)
     }
 
+    revealControls()
+
   }
 
   function toggleVolume(e: any) {
@@ -45,12 +58,28 @@ export default function VideoOverlay({
     v.muted = !v.muted
     setMuted(v.muted)
 
+    revealControls()
+
+  }
+
+  function unmute(e: any) {
+
+    e.stopPropagation()
+
+    const v = getVideo(e.currentTarget)
+    if (!v) return
+
+    v.muted = false
+    v.volume = 1
+
+    setMuted(false)
+    revealControls()
+
   }
 
   function updateProgress(e: any) {
 
     const v = e.target
-
     const percent = (v.currentTime / v.duration) * 100
     setProgress(percent)
 
@@ -66,6 +95,10 @@ export default function VideoOverlay({
 
     v.currentTime = percent * v.duration
 
+  }
+
+  function handleTap() {
+    revealControls()
   }
 
   useEffect(() => {
@@ -86,11 +119,35 @@ export default function VideoOverlay({
 
   return (
 
-    <div className="absolute inset-0 flex flex-col justify-end pointer-events-none">
+    <div
+      className="absolute inset-0 flex flex-col justify-end"
+      onClick={handleTap}
+    >
+
+      {/* Floating Unmute Button */}
+
+      {muted && (
+
+        <div className="absolute inset-0 flex items-center justify-center">
+
+          <button
+            onClick={unmute}
+            className="bg-black/70 text-white px-5 py-3 rounded-lg text-lg backdrop-blur"
+          >
+            🔊 Hear Sound
+          </button>
+
+        </div>
+
+      )}
 
       {/* Controls */}
 
-      <div className="p-4 space-y-2 pointer-events-auto">
+      <div
+        className={`p-4 space-y-2 transition-opacity duration-300 ${
+          showControls ? "opacity-100" : "opacity-0"
+        }`}
+      >
 
         {/* Timeline */}
 
@@ -104,11 +161,9 @@ export default function VideoOverlay({
           />
         </div>
 
-        {/* Control Row */}
+        {/* Controls Row */}
 
         <div className="flex items-center justify-between text-white">
-
-          {/* Left Controls */}
 
           <div className="flex items-center gap-4">
 
@@ -128,8 +183,6 @@ export default function VideoOverlay({
 
           </div>
 
-          {/* Right Controls */}
-
           <div className="flex items-center gap-6">
 
             <button
@@ -141,8 +194,6 @@ export default function VideoOverlay({
             >
               ❤️
             </button>
-
-            {/* Swipe hint */}
 
             <div className="text-xl opacity-70">
               ↓
