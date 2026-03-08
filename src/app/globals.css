@@ -60,3 +60,6 @@ body {
   background-color: black;
   color: white;
 }
+.auth-glow {
+  box-shadow: 0 0 40px rgba(0,255,120,0.15);
+}
