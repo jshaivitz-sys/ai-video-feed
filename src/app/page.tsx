@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
-import Header from "@/components/Header"
 
 const PAGE_SIZE = 10
 
 export default function Home() {
 
   const [videos, setVideos] = useState<any[]>([])
+  const [profiles, setProfiles] = useState<any>({})
   const [user, setUser] = useState<any>(null)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -18,20 +18,17 @@ export default function Home() {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    init()
+    getUser()
+    fetchVideos(0)
   }, [])
 
   useEffect(() => {
     setupInfiniteScroll()
   }, [videos])
 
-  async function init() {
-
+  async function getUser() {
     const { data } = await supabase.auth.getUser()
     setUser(data.user)
-
-    fetchVideos(0)
-
   }
 
   async function fetchVideos(pageNumber: number) {
@@ -45,11 +42,7 @@ export default function Home() {
 
     const { data, error } = await supabase
       .from("videos")
-      .select(`
-        *,
-        profiles(display_name),
-        likes:likes(count)
-      `)
+      .select("*")
       .order("created_at", { ascending: false })
       .range(from, to)
 
@@ -59,15 +52,32 @@ export default function Home() {
       return
     }
 
-    const formatted = data.map((video: any) => ({
-      ...video,
-      likes: video.likes?.[0]?.count || 0
-    }))
+    if (!data) {
+      setLoading(false)
+      return
+    }
 
-    if (formatted.length < PAGE_SIZE) setHasMore(false)
+    if (data.length < PAGE_SIZE) setHasMore(false)
 
-    setVideos(prev => [...prev, ...formatted])
+    setVideos(prev => [...prev, ...data])
     setPage(pageNumber + 1)
+
+    // fetch profiles
+    const userIds = [...new Set(data.map(v => v.user_id))]
+
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", userIds)
+
+    const profileMap: any = {}
+
+    profileData?.forEach(p => {
+      profileMap[p.id] = p.display_name
+    })
+
+    setProfiles(prev => ({ ...prev, ...profileMap }))
+
     setLoading(false)
 
   }
@@ -75,14 +85,14 @@ export default function Home() {
   async function likeVideo(video: any) {
 
     const { data } = await supabase.auth.getUser()
-    if (!data.user) return
+    const user = data.user
 
-    const userId = data.user.id
+    if (!user) return
 
     const { data: existing } = await supabase
       .from("likes")
       .select("id")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .eq("video_id", video.id)
       .maybeSingle()
 
@@ -91,7 +101,7 @@ export default function Home() {
       await supabase
         .from("likes")
         .delete()
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("video_id", video.id)
 
       setVideos(prev =>
@@ -107,7 +117,7 @@ export default function Home() {
       await supabase
         .from("likes")
         .insert({
-          user_id: userId,
+          user_id: user.id,
           video_id: video.id
         })
 
@@ -166,8 +176,6 @@ export default function Home() {
 
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
 
-      <Header />
-
       {videos.map((video, i) => (
 
         <div
@@ -185,26 +193,21 @@ export default function Home() {
             className="h-full w-full object-cover"
           />
 
-          {/* creator */}
-
           <div className="absolute bottom-24 left-6 text-white">
 
             <div className="font-bold">
-              @{video.profiles?.display_name || "anon"}
+              @{profiles[video.user_id] || "anon"}
             </div>
 
             <div>{video.caption}</div>
 
           </div>
 
-          {/* like button */}
-
           <button
             onClick={() => likeVideo(video)}
-            className="absolute right-6 bottom-32 text-white text-4xl active:scale-125 transition"
+            className="absolute right-6 bottom-24 text-white text-3xl transition-transform active:scale-150"
           >
-            ❤️
-            <div className="text-sm">{video.likes}</div>
+            ❤️ {video.likes}
           </button>
 
         </div>
