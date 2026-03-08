@@ -209,7 +209,7 @@ export default function Home() {
             }
 
           }}
-          className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
+          className="video-container h-screen w-screen snap-start relative flex items-center justify-center bg-black"
         >
 
           <video

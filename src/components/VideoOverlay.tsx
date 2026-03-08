@@ -12,102 +12,45 @@ export default function VideoOverlay({
 
   const [muted, setMuted] = useState(true)
 
-  function togglePlay(e: any) {
-
-    const videoEl = e.currentTarget.parentElement.querySelector("video")
-
-    if (!videoEl) return
-
-    if (videoEl.paused) {
-      videoEl.play()
-    } else {
-      videoEl.pause()
-    }
-
-  }
-
   function toggleSound(e: any) {
 
     e.stopPropagation()
 
-    const videoEl = e.currentTarget.parentElement.querySelector("video")
+    const videoEl =
+      e.currentTarget.closest(".video-container")
+      ?.querySelector("video")
 
     if (!videoEl) return
 
-    videoEl.muted = !videoEl.muted
-    setMuted(videoEl.muted)
+    videoEl.muted = false
+    videoEl.play()
 
-  }
-
-  function rewind(e: any) {
-
-    e.stopPropagation()
-
-    const videoEl = e.currentTarget.parentElement.querySelector("video")
-
-    if (!videoEl) return
-
-    videoEl.currentTime -= 5
-
-  }
-
-  function forward(e: any) {
-
-    e.stopPropagation()
-
-    const videoEl = e.currentTarget.parentElement.querySelector("video")
-
-    if (!videoEl) return
-
-    videoEl.currentTime += 5
+    setMuted(false)
 
   }
 
   return (
 
-    <div
-      onClick={togglePlay}
-      className="absolute inset-0 flex flex-col justify-between p-6 text-white"
-    >
+    <div className="absolute inset-0 flex flex-col justify-between p-6 text-white pointer-events-none">
 
-      {/* Top Controls */}
+      {/* Hear Sound Overlay */}
 
-      <div className="flex justify-end gap-3">
-
-        <button
-          onClick={toggleSound}
-          className="bg-black/60 px-3 py-2 rounded"
-        >
-          {muted ? "🔇" : "🔊"}
-        </button>
-
-      </div>
-
-      {/* Bottom Controls */}
-
-      <div className="flex justify-between items-end">
-
-        {/* Video Controls */}
-
-        <div className="flex gap-3">
+      {muted && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
 
           <button
-            onClick={rewind}
-            className="bg-black/60 px-3 py-2 rounded"
+            onClick={toggleSound}
+            className="bg-black/70 px-5 py-3 rounded-lg text-white text-lg font-semibold backdrop-blur"
           >
-            ⏪
-          </button>
-
-          <button
-            onClick={forward}
-            className="bg-black/60 px-3 py-2 rounded"
-          >
-            ⏩
+            🔊 Hear Sound
           </button>
 
         </div>
+      )}
 
-        {/* Like */}
+      {/* Like Button */}
+
+      <div className="flex justify-end pointer-events-auto">
 
         <button
           onClick={(e) => {
@@ -122,5 +65,7 @@ export default function VideoOverlay({
       </div>
 
     </div>
+
   )
+
 }
