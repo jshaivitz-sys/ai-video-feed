@@ -15,7 +15,7 @@ export default function AuthCard({
         <div className="text-center mb-6">
 
           <div className="text-green-400 text-3xl font-bold tracking-wider">
-            BOTFLIX
+            BOTFLIXER
           </div>
 
           <div className="text-zinc-400 text-sm">
