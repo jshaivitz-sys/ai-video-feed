@@ -12,6 +12,7 @@ export default function Home() {
 
   const [videos, setVideos] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
+  const [profiles, setProfiles] = useState<any>({})
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
@@ -67,7 +68,7 @@ export default function Home() {
 
   }
 
-  async function fetchVideos(pageNumber: number, reset=false) {
+  async function fetchVideos(pageNumber: number, reset = false) {
 
     if (loading) return
 
@@ -78,13 +79,9 @@ export default function Home() {
 
     const { data, error } = await supabase
       .from("videos")
-      .select(`
-        *,
-        profiles(display_name),
-        likes:likes(count)
-      `)
-      .order("created_at",{ascending:false})
-      .range(from,to)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .range(from, to)
 
     if (error) {
       console.error(error)
@@ -97,72 +94,95 @@ export default function Home() {
       return
     }
 
+    // fetch profile names
+    const userIds = [...new Set(data.map(v => v.user_id).filter(Boolean))]
+
+    if (userIds.length > 0) {
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", userIds)
+
+      const map: any = {}
+
+      profileData?.forEach(p => {
+        map[p.id] = p.display_name
+      })
+
+      setProfiles(map)
+
+    }
+
     if (data.length < PAGE_SIZE) setHasMore(false)
 
     if (reset) {
       setVideos(data)
       setPage(1)
     } else {
-      setVideos(prev => [...prev,...data])
-      setPage(pageNumber+1)
+      setVideos(prev => [...prev, ...data])
+      setPage(pageNumber + 1)
     }
 
     setLoading(false)
 
   }
 
-  async function toggleLike(video:any){
+  async function toggleLike(video: any) {
 
-    if(!user) return
+    if (!user) return
 
-    const { data:existing } = await supabase
+    const { data: existing } = await supabase
       .from("likes")
       .select("*")
-      .eq("user_id",user.id)
-      .eq("video_id",video.id)
+      .eq("user_id", user.id)
+      .eq("video_id", video.id)
       .maybeSingle()
 
-    if(existing){
+    if (existing) {
 
       await supabase
         .from("likes")
         .delete()
-        .eq("user_id",user.id)
-        .eq("video_id",video.id)
+        .eq("user_id", user.id)
+        .eq("video_id", video.id)
 
     } else {
 
       await supabase
         .from("likes")
         .insert({
-          user_id:user.id,
-          video_id:video.id
+          user_id: user.id,
+          video_id: video.id
         })
 
     }
 
-    fetchVideos(0,true)
+    fetchVideos(0, true)
 
   }
 
-  function observeVideo(el:HTMLVideoElement|null){
+  function observeVideo(el: HTMLVideoElement | null) {
 
-    if(!el) return
+    if (!el) return
 
-    if(!observerRef.current){
+    if (!observerRef.current) {
 
-      observerRef.current=new IntersectionObserver(entries=>{
+      observerRef.current = new IntersectionObserver(
+        entries => {
 
-        entries.forEach(entry=>{
+          entries.forEach(entry => {
 
-          const video=entry.target as HTMLVideoElement
+            const video = entry.target as HTMLVideoElement
 
-          if(entry.isIntersecting) video.play().catch(()=>{})
-          else video.pause()
+            if (entry.isIntersecting) video.play().catch(() => {})
+            else video.pause()
 
-        })
+          })
 
-      },{threshold:0.7})
+        },
+        { threshold: 0.7 }
+      )
 
     }
 
@@ -170,13 +190,13 @@ export default function Home() {
 
   }
 
-  function setupInfiniteScroll(){
+  function setupInfiniteScroll() {
 
-    if(!sentinelRef.current) return
+    if (!sentinelRef.current) return
 
-    const infiniteObserver=new IntersectionObserver(entries=>{
+    const infiniteObserver = new IntersectionObserver(entries => {
 
-      if(entries[0].isIntersecting && hasMore){
+      if (entries[0].isIntersecting && hasMore) {
         fetchVideos(page)
       }
 
@@ -186,38 +206,38 @@ export default function Home() {
 
   }
 
-  return(
+  return (
 
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black pt-16">
 
-      <Header/>
+      <Header />
 
-      {videos.map((video,i)=>(
+      {videos.map((video, i) => (
 
         <motion.div
           key={video.id}
           drag="y"
-          dragConstraints={{top:0,bottom:0}}
+          dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.2}
           className="video-container h-screen w-screen snap-start relative flex items-center justify-center bg-black"
         >
 
           <video
-            ref={(el)=>observeVideo(el)}
+            ref={(el) => observeVideo(el)}
             src={video.video_url}
             loop
             muted
             playsInline
-            preload={i<2?"auto":"metadata"}
+            preload={i < 2 ? "auto" : "metadata"}
             className="h-full w-full object-cover"
           />
 
-          <VideoOverlay video={video} toggleLike={toggleLike}/>
+          <VideoOverlay video={video} toggleLike={toggleLike} />
 
           <div className="absolute bottom-24 left-6 text-white">
 
             <div className="font-bold">
-              @{video.profiles?.display_name || "anon"}
+              @{profiles[video.user_id] || "anon"}
             </div>
 
             <div>{video.caption}</div>
