@@ -1,32 +1,62 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
+
+const PAGE_SIZE = 10
 
 export default function Home() {
   const [videos, setVideos] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     getUser()
-    fetchVideos()
+    fetchVideos(0)
   }, [])
+
+  useEffect(() => {
+    setupInfiniteScroll()
+  }, [videos])
 
   async function getUser() {
     const { data } = await supabase.auth.getUser()
     setUser(data.user)
   }
 
-  async function fetchVideos() {
+  async function fetchVideos(pageNumber: number) {
+    if (loading) return
+
+    setLoading(true)
+
+    const from = pageNumber * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+
     const { data, error } = await supabase
       .from("videos")
       .select("*")
       .order("created_at", { ascending: false })
+      .range(from, to)
 
-    console.log("VIDEOS:", data)
-    console.log("ERROR:", error)
+    if (error) {
+      console.log("ERROR:", error)
+      setLoading(false)
+      return
+    }
 
-    if (data) setVideos(data)
+    if (data.length < PAGE_SIZE) {
+      setHasMore(false)
+    }
+
+    setVideos((prev) => [...prev, ...data])
+    setPage(pageNumber + 1)
+
+    setLoading(false)
   }
 
   async function likeVideo(video: any) {
@@ -35,7 +65,57 @@ export default function Home() {
       .update({ likes: video.likes + 1 })
       .eq("id", video.id)
 
-    fetchVideos()
+    setVideos((prev) =>
+      prev.map((v) =>
+        v.id === video.id ? { ...v, likes: v.likes + 1 } : v
+      )
+    )
+  }
+
+  function observeVideo(el: HTMLVideoElement | null) {
+    if (!el) return
+
+    if (!observerRef.current) {
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const video = entry.target as HTMLVideoElement
+
+            if (entry.isIntersecting) {
+              video.play().catch(() => {})
+            } else {
+              video.pause()
+            }
+          })
+        },
+        { threshold: 0.7 }
+      )
+    }
+
+    observerRef.current.observe(el)
+  }
+
+  function setupInfiniteScroll() {
+    if (!sentinelRef.current) return
+
+    const infiniteObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          fetchVideos(page)
+        }
+      },
+      { threshold: 1 }
+    )
+
+    infiniteObserver.observe(sentinelRef.current)
+  }
+
+  if (!videos.length) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-black text-white text-xl">
+        Loading feed...
+      </div>
+    )
   }
 
   return (
@@ -59,32 +139,18 @@ export default function Home() {
         </a>
       )}
 
-      {videos.map((video) => (
+      {videos.map((video, i) => (
         <div
           key={video.id}
           className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
         >
           <video
-            ref={(el) => {
-              if (!el) return
-
-              const observer = new IntersectionObserver(
-                ([entry]) => {
-                  if (entry.isIntersecting) {
-                    el.play()
-                  } else {
-                    el.pause()
-                  }
-                },
-                { threshold: 0.7 }
-              )
-
-              observer.observe(el)
-            }}
+            ref={observeVideo}
             src={video.video_url}
             loop
             muted
             playsInline
+            preload={i < 2 ? "auto" : "metadata"}
             className="h-full w-full object-cover"
           />
 
@@ -95,12 +161,21 @@ export default function Home() {
 
           <button
             onClick={() => likeVideo(video)}
-            className="absolute right-6 bottom-24 text-white text-2xl"
+            className="absolute right-6 bottom-24 text-white text-3xl transition-transform active:scale-150"
           >
             ❤️ {video.likes}
           </button>
         </div>
       ))}
+
+      <div
+        ref={sentinelRef}
+        className="h-20 flex items-center justify-center text-white"
+      >
+        {loading && "Loading more..."}
+        {!hasMore && "End of feed"}
+      </div>
+
     </div>
   )
 }
