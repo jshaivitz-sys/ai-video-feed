@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
 import Header from "@/components/Header"
 import VideoOverlay from "@/components/VideoOverlay"
+import { motion } from "framer-motion"
 
 const PAGE_SIZE = 10
 
@@ -135,8 +136,26 @@ export default function Home() {
       )}
 
       {videos.map((video, i) => (
-        <div
+        <motion.div
           key={video.id}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(event, info) => {
+            if (info.offset.y < -120) {
+              window.scrollBy({
+                top: window.innerHeight,
+                behavior: "smooth",
+              })
+            }
+
+            if (info.offset.y > 120) {
+              window.scrollBy({
+                top: -window.innerHeight,
+                behavior: "smooth",
+              })
+            }
+          }}
           className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
         >
           <video
@@ -155,7 +174,7 @@ export default function Home() {
             <div className="font-bold">@anonymous</div>
             <div>{video.caption}</div>
           </div>
-        </div>
+        </motion.div>
       ))}
 
       <div
