@@ -6,44 +6,77 @@ import AuthCard from "@/components/AuthCard"
 
 export default function LoginPage() {
 
+  const [displayName, setDisplayName] = useState("")
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function signIn() {
+  async function login() {
+
+    if (!displayName) {
+      alert("Please choose a display name")
+      return
+    }
+
+    if (!email) {
+      alert("Enter your email")
+      return
+    }
+
     setLoading(true)
 
-    await supabase.auth.signInWithOtp({
-      email
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: window.location.origin
+      }
     })
 
-    alert("Check your email for the login link.")
+    if (error) {
+      alert(error.message)
+      setLoading(false)
+      return
+    }
+
+    localStorage.setItem("pending_display_name", displayName)
+
+    alert("Check your email for the login link")
 
     setLoading(false)
+
   }
 
   return (
-    <AuthCard title="Login">
+
+    <AuthCard title="Login to Botflixer">
 
       <div className="space-y-4">
 
         <input
-          type="email"
-          placeholder="Email"
+          value={displayName}
+          onChange={(e)=>setDisplayName(e.target.value)}
+          placeholder="Display name"
+          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
+        />
+
+        <input
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white outline-none focus:border-green-400"
+          onChange={(e)=>setEmail(e.target.value)}
+          placeholder="Email address"
+          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
         />
 
         <button
-          onClick={signIn}
+          onClick={login}
           disabled={loading}
           className="w-full bg-green-400 text-black font-semibold py-3 rounded hover:bg-green-300 transition"
         >
-          {loading ? "Sending..." : "Send Login Link"}
+          {loading ? "Sending link..." : "Send Login Link"}
         </button>
 
       </div>
 
     </AuthCard>
+
   )
+
 }

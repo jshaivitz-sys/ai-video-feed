@@ -4,60 +4,67 @@ import { useState } from "react"
 import { supabase } from "../../lib/supabase"
 import AuthCard from "@/components/AuthCard"
 
-export default function UploadPage() {
+export default function UploadPage(){
 
-  const [file, setFile] = useState<File | null>(null)
-  const [caption, setCaption] = useState("")
-  const [uploading, setUploading] = useState(false)
+  const [file,setFile]=useState<File|null>(null)
+  const [caption,setCaption]=useState("")
+  const [uploading,setUploading]=useState(false)
 
-  async function uploadVideo() {
+  async function uploadVideo(){
 
-    if (!file) {
+    if(!file){
       alert("Please select a video file")
+      return
+    }
+
+    if(!file.type.startsWith("video/")){
+      alert("Only video files allowed")
+      return
+    }
+
+    if(file.size>50*1024*1024){
+      alert("Video must be under 50MB")
       return
     }
 
     setUploading(true)
 
-    const fileName = `${Date.now()}-${file.name}`
+    const { data } = await supabase.auth.getUser()
 
-    const { data, error } = await supabase.storage
+    const fileName=`${Date.now()}-${file.name}`
+
+    const { error } = await supabase.storage
       .from("videos")
-      .upload(fileName, file)
+      .upload(fileName,file)
 
-    if (error) {
-      console.error(error)
+    if(error){
       alert("Upload failed")
       setUploading(false)
       return
     }
 
-    const { data: publicUrlData } = supabase.storage
+    const { data:publicUrlData } = supabase.storage
       .from("videos")
       .getPublicUrl(fileName)
 
-    const publicUrl = publicUrlData.publicUrl
-
-    const { error: insertError } = await supabase
+    await supabase
       .from("videos")
       .insert({
-        video_url: publicUrl,
-        caption
+        video_url:publicUrlData.publicUrl,
+        caption,
+        user_id:data.user?.id
       })
 
-    if (insertError) {
-      console.error(insertError)
-      alert("Database insert failed")
-    } else {
-      alert("Video uploaded!")
-      setFile(null)
-      setCaption("")
-    }
+    alert("Video uploaded!")
 
+    setFile(null)
+    setCaption("")
     setUploading(false)
+
   }
 
-  return (
+  return(
+
     <AuthCard title="Upload Video">
 
       <div className="space-y-4">
@@ -65,27 +72,29 @@ export default function UploadPage() {
         <input
           type="file"
           accept="video/*"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          onChange={(e)=>setFile(e.target.files?.[0]||null)}
           className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
         />
 
         <textarea
           placeholder="Caption"
           value={caption}
-          onChange={(e) => setCaption(e.target.value)}
+          onChange={(e)=>setCaption(e.target.value)}
           className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
         />
 
         <button
           onClick={uploadVideo}
           disabled={uploading}
-          className="w-full bg-green-400 text-black font-semibold py-3 rounded hover:bg-green-300 transition"
+          className="w-full bg-green-400 text-black font-semibold py-3 rounded"
         >
-          {uploading ? "Uploading..." : "Upload Video"}
+          {uploading?"Uploading...":"Upload Video"}
         </button>
 
       </div>
 
     </AuthCard>
+
   )
+
 }
