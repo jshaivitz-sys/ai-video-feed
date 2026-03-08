@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
-import Header from "@/components/Header";
-import VideoOverlay from "@/components/VideoOverlay";
+import Header from "@/components/Header"
+import VideoOverlay from "@/components/VideoOverlay"
 
 const PAGE_SIZE = 10
 
@@ -52,7 +52,6 @@ export default function Home() {
     }
 
     if (!data) {
-      console.error("No data returned from Supabase")
       setLoading(false)
       return
     }
@@ -122,7 +121,6 @@ export default function Home() {
     infiniteObserver.observe(sentinelRef.current)
   }
 
-  // EMPTY FEED STATE
   if (!loading && videos.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white text-xl">
@@ -134,27 +132,12 @@ export default function Home() {
   return (
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
 
-      {/* Google Analytics placeholder */}
-      <script
-        async
-        src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXX"
-      ></script>
-
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-XXXXXXXX');
-        `,
-        }}
-      />
+      <Header />
 
       {user && (
         <a
           href="/upload"
-          className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded"
+          className="fixed top-20 right-6 z-50 bg-white text-black px-4 py-2 rounded"
         >
           Upload
         </a>
@@ -163,7 +146,7 @@ export default function Home() {
       {!user && (
         <a
           href="/login"
-          className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded"
+          className="fixed top-20 right-6 z-50 bg-white text-black px-4 py-2 rounded"
         >
           Login
         </a>
@@ -175,7 +158,7 @@ export default function Home() {
           className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
         >
           <video
-            ref={observeVideo}
+            ref={(el) => observeVideo(el)}
             src={video.video_url}
             loop
             muted
@@ -183,6 +166,8 @@ export default function Home() {
             preload={i < 2 ? "auto" : "metadata"}
             className="h-full w-full object-cover"
           />
+
+          <VideoOverlay />
 
           <div className="absolute bottom-20 left-6 text-white">
             <div className="font-bold">@anonymous</div>
@@ -205,15 +190,7 @@ export default function Home() {
         {loading && "Loading more..."}
         {!hasMore && "End of feed"}
       </div>
+
     </div>
   )
 }
-<>
-  <Header />
-
-  <main className="pt-16">
-
-    {/* your video feed */}
-
-  </main>
-</>
