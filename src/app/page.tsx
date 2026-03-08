@@ -18,10 +18,13 @@ export default function Home() {
   }
 
   async function fetchVideos() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("videos")
-      .select("*, profiles(username)")
+      .select("*")
       .order("created_at", { ascending: false })
+
+    console.log("VIDEOS:", data)
+    console.log("ERROR:", error)
 
     if (data) setVideos(data)
   }
@@ -86,9 +89,7 @@ export default function Home() {
           />
 
           <div className="absolute bottom-20 left-6 text-white">
-            <div className="font-bold">
-              @{video.profiles?.username || "anonymous"}
-            </div>
+            <div className="font-bold">@anonymous</div>
             <div>{video.caption}</div>
           </div>
 
