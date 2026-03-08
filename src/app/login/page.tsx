@@ -6,62 +6,59 @@ import AuthCard from "@/components/AuthCard"
 
 export default function LoginPage() {
 
-  const [displayName, setDisplayName] = useState("")
-  const [email, setEmail] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [email,setEmail] = useState("")
+  const [displayName,setDisplayName] = useState("")
+  const [loading,setLoading] = useState(false)
 
   async function login() {
 
-    if (!displayName) {
-      alert("Please choose a display name")
+    if(!email){
+      alert("Enter email")
       return
     }
 
-    if (!email) {
-      alert("Enter your email")
+    if(!displayName){
+      alert("Enter display name")
       return
     }
 
     setLoading(true)
 
+    // save display name locally for later
+    localStorage.setItem("display_name",displayName)
+
     const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: window.location.origin
-      }
+      email
     })
 
-    if (error) {
+    if(error){
       alert(error.message)
-      setLoading(false)
-      return
+    } else {
+      alert("Check your email for login link")
     }
 
-    localStorage.setItem("pending_display_name", displayName)
-
-    alert("Check your email for the login link")
-
     setLoading(false)
-
   }
 
-  return (
+  return(
 
-    <AuthCard title="Login to Botflixer">
+    <AuthCard title="Login">
 
       <div className="space-y-4">
 
         <input
+          type="text"
+          placeholder="Display Name"
           value={displayName}
           onChange={(e)=>setDisplayName(e.target.value)}
-          placeholder="Display name"
           className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
         />
 
         <input
+          type="email"
+          placeholder="Email"
           value={email}
           onChange={(e)=>setEmail(e.target.value)}
-          placeholder="Email address"
           className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
         />
 
@@ -78,5 +75,4 @@ export default function LoginPage() {
     </AuthCard>
 
   )
-
 }
