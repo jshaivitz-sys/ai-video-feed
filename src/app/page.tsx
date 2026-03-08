@@ -5,7 +5,6 @@ import { supabase } from "../lib/supabase"
 import Header from "@/components/Header"
 import VideoOverlay from "@/components/VideoOverlay"
 import { motion } from "framer-motion"
-import Link from "next/link"
 
 const PAGE_SIZE = 10
 
@@ -29,10 +28,12 @@ export default function Home() {
   }, [videos])
 
   async function init() {
+
     const { data } = await supabase.auth.getUser()
     setUser(data.user)
 
     fetchVideos(0, true)
+
   }
 
   async function fetchVideos(pageNumber: number, reset = false) {
@@ -77,6 +78,7 @@ export default function Home() {
     }
 
     setLoading(false)
+
   }
 
   async function toggleLike(video: any) {
@@ -110,6 +112,7 @@ export default function Home() {
     }
 
     fetchVideos(0, true)
+
   }
 
   function observeVideo(el: HTMLVideoElement | null) {
@@ -163,35 +166,20 @@ export default function Home() {
   }
 
   if (!loading && videos.length === 0) {
+
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white text-xl">
         No videos yet. Be the first to upload.
       </div>
     )
+
   }
 
   return (
+
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black pt-16">
 
       <Header />
-
-      {user && (
-        <Link
-          href="/upload"
-          className="fixed top-6 right-6 z-50 bg-green-400 text-black px-4 py-2 rounded font-semibold hover:bg-green-300 transition"
-        >
-          Upload Video
-        </Link>
-      )}
-
-      {!user && (
-        <Link
-          href="/login"
-          className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded"
-        >
-          Login
-        </Link>
-      )}
 
       {videos.map((video, i) => (
 
@@ -203,17 +191,21 @@ export default function Home() {
           onDragEnd={(event, info) => {
 
             if (info.offset.y < -120) {
+
               window.scrollBy({
                 top: window.innerHeight,
                 behavior: "smooth"
               })
+
             }
 
             if (info.offset.y > 120) {
+
               window.scrollBy({
                 top: -window.innerHeight,
                 behavior: "smooth"
               })
+
             }
 
           }}
@@ -236,8 +228,15 @@ export default function Home() {
           />
 
           <div className="absolute bottom-20 left-6 text-white">
-            <div className="font-bold">@anonymous</div>
-            <div>{video.caption}</div>
+
+            <div className="font-bold">
+              @anonymous
+            </div>
+
+            <div>
+              {video.caption}
+            </div>
+
           </div>
 
         </motion.div>
@@ -253,5 +252,7 @@ export default function Home() {
       </div>
 
     </div>
+
   )
+
 }
