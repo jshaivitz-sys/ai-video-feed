@@ -5,10 +5,12 @@ import { supabase } from "../lib/supabase"
 import Header from "@/components/Header"
 import VideoOverlay from "@/components/VideoOverlay"
 import { motion } from "framer-motion"
+import Link from "next/link"
 
 const PAGE_SIZE = 10
 
 export default function Home() {
+
   const [videos, setVideos] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
   const [page, setPage] = useState(0)
@@ -19,20 +21,22 @@ export default function Home() {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    getUser()
-    fetchVideos(0, true)
+    init()
   }, [])
 
   useEffect(() => {
     setupInfiniteScroll()
   }, [videos])
 
-  async function getUser() {
+  async function init() {
     const { data } = await supabase.auth.getUser()
     setUser(data.user)
+
+    fetchVideos(0, true)
   }
 
   async function fetchVideos(pageNumber: number, reset = false) {
+
     if (loading) return
 
     setLoading(true)
@@ -50,7 +54,7 @@ export default function Home() {
       .range(from, to)
 
     if (error) {
-      console.error("Supabase fetch error:", error)
+      console.error(error)
       setLoading(false)
       return
     }
@@ -68,7 +72,7 @@ export default function Home() {
       setVideos(data)
       setPage(1)
     } else {
-      setVideos((prev) => [...prev, ...data])
+      setVideos(prev => [...prev, ...data])
       setPage(pageNumber + 1)
     }
 
@@ -76,6 +80,7 @@ export default function Home() {
   }
 
   async function toggleLike(video: any) {
+
     if (!user) return
 
     const { data: existing } = await supabase
@@ -86,30 +91,38 @@ export default function Home() {
       .maybeSingle()
 
     if (existing) {
+
       await supabase
         .from("likes")
         .delete()
         .eq("user_id", user.id)
         .eq("video_id", video.id)
+
     } else {
+
       await supabase
         .from("likes")
         .insert({
           user_id: user.id,
           video_id: video.id
         })
+
     }
 
     fetchVideos(0, true)
   }
 
   function observeVideo(el: HTMLVideoElement | null) {
+
     if (!el) return
 
     if (!observerRef.current) {
+
       observerRef.current = new IntersectionObserver(
         (entries) => {
-          entries.forEach((entry) => {
+
+          entries.forEach(entry => {
+
             const video = entry.target as HTMLVideoElement
 
             if (entry.isIntersecting) {
@@ -117,28 +130,36 @@ export default function Home() {
             } else {
               video.pause()
             }
+
           })
+
         },
         { threshold: 0.7 }
       )
+
     }
 
     observerRef.current.observe(el)
+
   }
 
   function setupInfiniteScroll() {
+
     if (!sentinelRef.current) return
 
     const infiniteObserver = new IntersectionObserver(
       (entries) => {
+
         if (entries[0].isIntersecting && hasMore) {
           fetchVideos(page)
         }
+
       },
       { threshold: 1 }
     )
 
     infiniteObserver.observe(sentinelRef.current)
+
   }
 
   if (!loading && videos.length === 0) {
@@ -155,43 +176,46 @@ export default function Home() {
       <Header />
 
       {user && (
-        <a
+        <Link
           href="/upload"
-          className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded"
+          className="fixed top-6 right-6 z-50 bg-green-400 text-black px-4 py-2 rounded font-semibold hover:bg-green-300 transition"
         >
-          Upload
-        </a>
+          Upload Video
+        </Link>
       )}
 
       {!user && (
-        <a
+        <Link
           href="/login"
           className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded"
         >
           Login
-        </a>
+        </Link>
       )}
 
       {videos.map((video, i) => (
+
         <motion.div
           key={video.id}
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.2}
           onDragEnd={(event, info) => {
+
             if (info.offset.y < -120) {
               window.scrollBy({
                 top: window.innerHeight,
-                behavior: "smooth",
+                behavior: "smooth"
               })
             }
 
             if (info.offset.y > 120) {
               window.scrollBy({
                 top: -window.innerHeight,
-                behavior: "smooth",
+                behavior: "smooth"
               })
             }
+
           }}
           className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
         >
@@ -217,6 +241,7 @@ export default function Home() {
           </div>
 
         </motion.div>
+
       ))}
 
       <div
