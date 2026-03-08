@@ -6,31 +6,55 @@ import AuthCard from "@/components/AuthCard"
 
 export default function UploadPage() {
 
-  const [videoUrl, setVideoUrl] = useState("")
+  const [file, setFile] = useState<File | null>(null)
   const [caption, setCaption] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   async function uploadVideo() {
 
-    setLoading(true)
+    if (!file) {
+      alert("Please select a video file")
+      return
+    }
 
-    const { error } = await supabase
+    setUploading(true)
+
+    const fileName = `${Date.now()}-${file.name}`
+
+    const { data, error } = await supabase.storage
+      .from("videos")
+      .upload(fileName, file)
+
+    if (error) {
+      console.error(error)
+      alert("Upload failed")
+      setUploading(false)
+      return
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("videos")
+      .getPublicUrl(fileName)
+
+    const publicUrl = publicUrlData.publicUrl
+
+    const { error: insertError } = await supabase
       .from("videos")
       .insert({
-        video_url: videoUrl,
+        video_url: publicUrl,
         caption
       })
 
-    if (error) {
-      alert("Upload failed")
-      console.error(error)
+    if (insertError) {
+      console.error(insertError)
+      alert("Database insert failed")
     } else {
       alert("Video uploaded!")
-      setVideoUrl("")
+      setFile(null)
       setCaption("")
     }
 
-    setLoading(false)
+    setUploading(false)
   }
 
   return (
@@ -39,25 +63,25 @@ export default function UploadPage() {
       <div className="space-y-4">
 
         <input
-          placeholder="Video URL"
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white outline-none focus:border-green-400"
+          type="file"
+          accept="video/*"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
         />
 
         <textarea
           placeholder="Caption"
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
-          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white outline-none focus:border-green-400"
+          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
         />
 
         <button
           onClick={uploadVideo}
-          disabled={loading}
+          disabled={uploading}
           className="w-full bg-green-400 text-black font-semibold py-3 rounded hover:bg-green-300 transition"
         >
-          {loading ? "Uploading..." : "Upload Video"}
+          {uploading ? "Uploading..." : "Upload Video"}
         </button>
 
       </div>
