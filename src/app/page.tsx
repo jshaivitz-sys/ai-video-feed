@@ -195,6 +195,7 @@ export default function Home() {
           }}
           className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
         >
+
           <video
             ref={(el) => observeVideo(el)}
             src={video.video_url}
@@ -205,24 +206,14 @@ export default function Home() {
             className="h-full w-full object-cover"
           />
 
-          <VideoOverlay />
+          <VideoOverlay
+            video={video}
+            toggleLike={toggleLike}
+          />
 
           <div className="absolute bottom-20 left-6 text-white">
             <div className="font-bold">@anonymous</div>
             <div>{video.caption}</div>
-          </div>
-
-          <div className="absolute right-6 bottom-24 flex flex-col items-center text-white">
-            <button
-              onClick={() => toggleLike(video)}
-              className="text-3xl transition-transform active:scale-150"
-            >
-              ❤️
-            </button>
-
-            <div className="text-sm">
-              {video.likes?.[0]?.count || 0}
-            </div>
           </div>
 
         </motion.div>
