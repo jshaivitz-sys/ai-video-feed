@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
+import Header from "@/components/Header";
+import VideoOverlay from "@/components/VideoOverlay";
 
 const PAGE_SIZE = 10
 
@@ -206,3 +208,12 @@ export default function Home() {
     </div>
   )
 }
+<>
+  <Header />
+
+  <main className="pt-16">
+
+    {/* your video feed */}
+
+  </main>
+</>
