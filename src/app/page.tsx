@@ -44,7 +44,13 @@ export default function Home() {
       .range(from, to)
 
     if (error) {
-      console.log("ERROR:", error)
+      console.error("Supabase fetch error:", error)
+      setLoading(false)
+      return
+    }
+
+    if (!data) {
+      console.error("No data returned from Supabase")
       setLoading(false)
       return
     }
@@ -55,15 +61,19 @@ export default function Home() {
 
     setVideos((prev) => [...prev, ...data])
     setPage(pageNumber + 1)
-
     setLoading(false)
   }
 
   async function likeVideo(video: any) {
-    await supabase
+    const { error } = await supabase
       .from("videos")
       .update({ likes: video.likes + 1 })
       .eq("id", video.id)
+
+    if (error) {
+      console.error("Like update failed:", error)
+      return
+    }
 
     setVideos((prev) =>
       prev.map((v) =>
@@ -110,16 +120,34 @@ export default function Home() {
     infiniteObserver.observe(sentinelRef.current)
   }
 
-  if (!videos.length) {
+  // EMPTY FEED STATE
+  if (!loading && videos.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white text-xl">
-        Loading feed...
+        No videos yet. Be the first to upload.
       </div>
     )
   }
 
   return (
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
+
+      {/* Google Analytics placeholder */}
+      <script
+        async
+        src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXX"
+      ></script>
+
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-XXXXXXXX');
+        `,
+        }}
+      />
 
       {user && (
         <a
@@ -175,7 +203,6 @@ export default function Home() {
         {loading && "Loading more..."}
         {!hasMore && "End of feed"}
       </div>
-
     </div>
   )
 }
