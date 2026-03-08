@@ -20,13 +20,11 @@ export default function VideoOverlay({
   }
 
   function revealControls() {
-
     setShowControls(true)
 
     setTimeout(() => {
       setShowControls(false)
     }, 2000)
-
   }
 
   function togglePlay(e: any) {
@@ -45,7 +43,6 @@ export default function VideoOverlay({
     }
 
     revealControls()
-
   }
 
   function toggleVolume(e: any) {
@@ -59,7 +56,6 @@ export default function VideoOverlay({
     setMuted(v.muted)
 
     revealControls()
-
   }
 
   function unmute(e: any) {
@@ -74,7 +70,6 @@ export default function VideoOverlay({
 
     setMuted(false)
     revealControls()
-
   }
 
   function updateProgress(e: any) {
@@ -85,16 +80,17 @@ export default function VideoOverlay({
 
   }
 
-  function seek(e: any) {
+  function scrub(e: any) {
 
-    const v = getVideo(e.currentTarget)
+    const timeline = e.currentTarget
+    const v = getVideo(timeline)
+
     if (!v) return
 
-    const rect = e.currentTarget.getBoundingClientRect()
+    const rect = timeline.getBoundingClientRect()
     const percent = (e.clientX - rect.left) / rect.width
 
     v.currentTime = percent * v.duration
-
   }
 
   function handleTap() {
@@ -124,7 +120,7 @@ export default function VideoOverlay({
       onClick={handleTap}
     >
 
-      {/* Floating Unmute Button */}
+      {/* Floating Unmute */}
 
       {muted && (
 
@@ -152,7 +148,8 @@ export default function VideoOverlay({
         {/* Timeline */}
 
         <div
-          onClick={seek}
+          onMouseDown={scrub}
+          onTouchStart={scrub}
           className="w-full h-1 bg-white/30 rounded cursor-pointer"
         >
           <div
