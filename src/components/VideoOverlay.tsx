@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+
 export default function VideoOverlay({
   video,
   toggleLike
@@ -7,33 +9,118 @@ export default function VideoOverlay({
   video: any
   toggleLike: (video: any) => void
 }) {
+
+  const [muted, setMuted] = useState(true)
+
+  function togglePlay(e: any) {
+
+    const videoEl = e.currentTarget.parentElement.querySelector("video")
+
+    if (!videoEl) return
+
+    if (videoEl.paused) {
+      videoEl.play()
+    } else {
+      videoEl.pause()
+    }
+
+  }
+
+  function toggleSound(e: any) {
+
+    e.stopPropagation()
+
+    const videoEl = e.currentTarget.parentElement.querySelector("video")
+
+    if (!videoEl) return
+
+    videoEl.muted = !videoEl.muted
+    setMuted(videoEl.muted)
+
+  }
+
+  function rewind(e: any) {
+
+    e.stopPropagation()
+
+    const videoEl = e.currentTarget.parentElement.querySelector("video")
+
+    if (!videoEl) return
+
+    videoEl.currentTime -= 5
+
+  }
+
+  function forward(e: any) {
+
+    e.stopPropagation()
+
+    const videoEl = e.currentTarget.parentElement.querySelector("video")
+
+    if (!videoEl) return
+
+    videoEl.currentTime += 5
+
+  }
+
   return (
-    <>
-      {/* Like Button */}
-      <div className="absolute right-6 bottom-24 flex flex-col items-center text-white">
+
+    <div
+      onClick={togglePlay}
+      className="absolute inset-0 flex flex-col justify-between p-6 text-white"
+    >
+
+      {/* Top Controls */}
+
+      <div className="flex justify-end gap-3">
 
         <button
-          onClick={() => toggleLike(video)}
-          className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-2xl transition-transform active:scale-150"
+          onClick={toggleSound}
+          className="bg-black/60 px-3 py-2 rounded"
+        >
+          {muted ? "🔇" : "🔊"}
+        </button>
+
+      </div>
+
+      {/* Bottom Controls */}
+
+      <div className="flex justify-between items-end">
+
+        {/* Video Controls */}
+
+        <div className="flex gap-3">
+
+          <button
+            onClick={rewind}
+            className="bg-black/60 px-3 py-2 rounded"
+          >
+            ⏪
+          </button>
+
+          <button
+            onClick={forward}
+            className="bg-black/60 px-3 py-2 rounded"
+          >
+            ⏩
+          </button>
+
+        </div>
+
+        {/* Like */}
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleLike(video)
+          }}
+          className="text-3xl transition-transform active:scale-150"
         >
           ❤️
         </button>
 
-        <div className="text-sm mt-1">
-          {video.likes?.[0]?.count || 0}
-        </div>
-
       </div>
 
-      {/* Watermark */}
-      <div className="absolute bottom-6 left-6 text-green-400 text-sm opacity-80">
-        botflixer.com
-      </div>
-
-      {/* Swipe hint */}
-      <div className="absolute bottom-6 right-6 text-white text-sm opacity-70">
-        swipe for more
-      </div>
-    </>
+    </div>
   )
 }
