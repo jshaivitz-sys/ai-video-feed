@@ -4,82 +4,89 @@ import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
 import Header from "@/components/Header"
 
-const PAGE_SIZE = 10
-
 export default function Home() {
 
   const [videos, setVideos] = useState<any[]>([])
+  const [profiles, setProfiles] = useState<Record<string,string>>({})
+  const [likes, setLikes] = useState<Record<string,number>>({})
   const [user, setUser] = useState<any>(null)
-  const [page, setPage] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
 
   const observerRef = useRef<IntersectionObserver | null>(null)
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    getUser()
-    fetchVideos(0)
+    init()
   }, [])
 
-  useEffect(() => {
-    setupInfiniteScroll()
-  }, [videos])
+  async function init() {
 
-  async function getUser() {
     const { data } = await supabase.auth.getUser()
     setUser(data.user)
-  }
 
-  async function fetchVideos(pageNumber: number) {
-
-    if (loading) return
-
-    setLoading(true)
-
-    const from = pageNumber * PAGE_SIZE
-    const to = from + PAGE_SIZE - 1
-
-    const { data, error } = await supabase
+    const { data: videosData } = await supabase
       .from("videos")
-      .select(`
-        *,
-        profiles(display_name),
-        likes(count)
-      `)
+      .select("*")
       .order("created_at", { ascending: false })
-      .range(from, to)
 
-    if (error) {
-      console.error(error)
-      setLoading(false)
-      return
+    if (!videosData) return
+
+    setVideos(videosData)
+
+    // get unique user ids
+    const userIds = Array.from(
+      new Set(
+        videosData
+          .map(v => v.user_id)
+          .filter(Boolean)
+      )
+    )
+
+    if (userIds.length > 0) {
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", userIds)
+
+      const profileMap: Record<string,string> = {}
+
+      profileData?.forEach(p => {
+        profileMap[p.id] = p.display_name
+      })
+
+      setProfiles(profileMap)
+
     }
 
-    const formatted = data.map((video: any) => ({
-      ...video,
-      likes: video.likes?.[0]?.count || 0
-    }))
+    // get likes
+    const videoIds = videosData.map(v => v.id)
 
-    if (formatted.length < PAGE_SIZE) setHasMore(false)
+    if (videoIds.length > 0) {
 
-    setVideos(prev => [...prev, ...formatted])
-    setPage(pageNumber + 1)
-    setLoading(false)
+      const { data: likesData } = await supabase
+        .from("likes")
+        .select("video_id")
+        .in("video_id", videoIds)
+
+      const likeMap: Record<string,number> = {}
+
+      likesData?.forEach(l => {
+        likeMap[l.video_id] = (likeMap[l.video_id] || 0) + 1
+      })
+
+      setLikes(likeMap)
+
+    }
 
   }
 
-  async function likeVideo(video: any) {
+  async function toggleLike(video:any) {
 
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) return
-
-    const userId = data.user.id
+    if (!user) return
 
     const { data: existing } = await supabase
       .from("likes")
-      .select("id")
-      .eq("user_id", userId)
+      .select("*")
+      .eq("user_id", user.id)
       .eq("video_id", video.id)
       .maybeSingle()
 
@@ -88,39 +95,33 @@ export default function Home() {
       await supabase
         .from("likes")
         .delete()
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("video_id", video.id)
 
-      setVideos(prev =>
-        prev.map(v =>
-          v.id === video.id
-            ? { ...v, likes: Math.max((v.likes || 1) - 1, 0) }
-            : v
-        )
-      )
+      setLikes(prev => ({
+        ...prev,
+        [video.id]: Math.max((prev[video.id] || 1) - 1, 0)
+      }))
 
     } else {
 
       await supabase
         .from("likes")
         .insert({
-          user_id: userId,
+          user_id: user.id,
           video_id: video.id
         })
 
-      setVideos(prev =>
-        prev.map(v =>
-          v.id === video.id
-            ? { ...v, likes: (v.likes || 0) + 1 }
-            : v
-        )
-      )
+      setLikes(prev => ({
+        ...prev,
+        [video.id]: (prev[video.id] || 0) + 1
+      }))
 
     }
 
   }
 
-  function observeVideo(el: HTMLVideoElement | null) {
+  function observeVideo(el:HTMLVideoElement | null) {
 
     if (!el) return
 
@@ -132,30 +133,16 @@ export default function Home() {
 
           const video = entry.target as HTMLVideoElement
 
-          if (entry.isIntersecting) video.play().catch(() => {})
+          if (entry.isIntersecting) video.play().catch(()=>{})
           else video.pause()
 
         })
 
-      }, { threshold: 0.7 })
+      }, { threshold:0.7 })
 
     }
 
     observerRef.current.observe(el)
-
-  }
-
-  function setupInfiniteScroll() {
-
-    if (!sentinelRef.current) return
-
-    const infiniteObserver = new IntersectionObserver(entries => {
-
-      if (entries[0].isIntersecting && hasMore) fetchVideos(page)
-
-    })
-
-    infiniteObserver.observe(sentinelRef.current)
 
   }
 
@@ -165,27 +152,7 @@ export default function Home() {
 
       <Header />
 
-      {user ? (
-
-        <a
-          href="/upload"
-          className="fixed top-20 right-6 z-50 bg-white text-black px-4 py-2 rounded"
-        >
-          Upload
-        </a>
-
-      ) : (
-
-        <a
-          href="/login"
-          className="fixed top-20 right-6 z-50 bg-white text-black px-4 py-2 rounded"
-        >
-          Login
-        </a>
-
-      )}
-
-      {videos.map((video, i) => (
+      {videos.map((video,i)=> (
 
         <div
           key={video.id}
@@ -193,7 +160,7 @@ export default function Home() {
         >
 
           <video
-            ref={observeVideo}
+            ref={(el)=>observeVideo(el)}
             src={video.video_url}
             playsInline
             muted
@@ -202,41 +169,29 @@ export default function Home() {
             className="h-full w-full object-cover"
           />
 
-          {/* caption */}
-
           <div className="absolute bottom-24 left-6 text-white">
 
             <div className="font-bold">
-              @{video.profiles?.display_name || "anonymous"}
+              @{profiles[video.user_id] ?? "anon"}
             </div>
 
             <div>{video.caption}</div>
 
           </div>
 
-          {/* like button */}
-
           <button
-            onClick={() => likeVideo(video)}
-            className="absolute right-6 bottom-32 text-white text-4xl active:scale-125 transition"
+            onClick={()=>toggleLike(video)}
+            className="absolute right-6 bottom-32 text-white text-4xl"
           >
             ❤️
-            <div className="text-sm">{video.likes}</div>
+            <div className="text-sm">
+              {likes[video.id] ?? 0}
+            </div>
           </button>
 
         </div>
 
       ))}
-
-      <div
-        ref={sentinelRef}
-        className="h-20 flex items-center justify-center text-white"
-      >
-
-        {loading && "Loading more..."}
-        {!hasMore && "End of feed"}
-
-      </div>
 
     </div>
 
