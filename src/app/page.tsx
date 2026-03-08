@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
+import Header from "@/components/Header"
 
 const PAGE_SIZE = 10
 
@@ -59,8 +60,7 @@ export default function Home() {
     setVideos(prev => [...prev, ...data])
     setPage(pageNumber + 1)
 
-    // load display names
-
+    // Load display names safely
     const userIds = [...new Set(data.map(v => v.user_id).filter(Boolean))]
 
     if (userIds.length > 0) {
@@ -171,6 +171,33 @@ export default function Home() {
 
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
 
+      {/* Branding Header */}
+      <Header />
+
+      {/* Upload/Login button */}
+
+      {user ? (
+
+        <a
+          href="/upload"
+          className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded font-semibold"
+        >
+          Upload
+        </a>
+
+      ) : (
+
+        <a
+          href="/login"
+          className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded font-semibold"
+        >
+          Login
+        </a>
+
+      )}
+
+      {/* Feed */}
+
       {videos.map((video,i)=> (
 
         <div
@@ -188,7 +215,7 @@ export default function Home() {
             className="h-full w-full object-cover"
           />
 
-          {/* creator + caption */}
+          {/* Creator + caption */}
 
           <div className="absolute bottom-24 left-6 text-white">
 
@@ -200,7 +227,7 @@ export default function Home() {
 
           </div>
 
-          {/* like button */}
+          {/* Like button */}
 
           <button
             onClick={()=>likeVideo(video)}
