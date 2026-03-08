@@ -49,8 +49,7 @@ export default function VideoOverlay({
 
   function updateProgress(e: any) {
 
-    const v = getVideo(e.currentTarget)
-    if (!v) return
+    const v = e.target
 
     const percent = (v.currentTime / v.duration) * 100
     setProgress(percent)
@@ -87,37 +86,11 @@ export default function VideoOverlay({
 
   return (
 
-    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+    <div className="absolute inset-0 flex flex-col justify-end pointer-events-none">
 
-      {/* Top Controls */}
+      {/* Controls */}
 
-      <div className="flex justify-end p-4 pointer-events-auto">
-
-        <button
-          onClick={toggleVolume}
-          className="text-white text-xl"
-        >
-          {muted ? "🔇" : "🔊"}
-        </button>
-
-      </div>
-
-      {/* Center Play */}
-
-      <div className="flex items-center justify-center pointer-events-auto">
-
-        <button
-          onClick={togglePlay}
-          className="text-white text-4xl"
-        >
-          {playing ? "❚❚" : "▶"}
-        </button>
-
-      </div>
-
-      {/* Bottom Controls */}
-
-      <div className="p-4 space-y-3 pointer-events-auto">
+      <div className="p-4 space-y-2 pointer-events-auto">
 
         {/* Timeline */}
 
@@ -131,24 +104,50 @@ export default function VideoOverlay({
           />
         </div>
 
-        {/* Bottom Row */}
+        {/* Control Row */}
 
-        <div className="flex justify-between items-center text-white">
+        <div className="flex items-center justify-between text-white">
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleLike(video)
-            }}
-            className="text-2xl"
-          >
-            ❤️
-          </button>
+          {/* Left Controls */}
 
-          {/* Swipe Hint */}
+          <div className="flex items-center gap-4">
 
-          <div className="text-2xl opacity-70">
-            ↓
+            <button
+              onClick={togglePlay}
+              className="text-xl"
+            >
+              {playing ? "❚❚" : "▶"}
+            </button>
+
+            <button
+              onClick={toggleVolume}
+              className="text-xl"
+            >
+              {muted ? "🔇" : "🔊"}
+            </button>
+
+          </div>
+
+          {/* Right Controls */}
+
+          <div className="flex items-center gap-6">
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleLike(video)
+              }}
+              className="text-xl"
+            >
+              ❤️
+            </button>
+
+            {/* Swipe hint */}
+
+            <div className="text-xl opacity-70">
+              ↓
+            </div>
+
           </div>
 
         </div>
