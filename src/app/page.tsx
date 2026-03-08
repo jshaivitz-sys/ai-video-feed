@@ -8,7 +8,7 @@ const PAGE_SIZE = 10
 export default function Home() {
 
   const [videos, setVideos] = useState<any[]>([])
-  const [profiles, setProfiles] = useState<any>({})
+  const [profiles, setProfiles] = useState<Record<string,string>>({})
   const [user, setUser] = useState<any>(null)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -18,23 +18,25 @@ export default function Home() {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    getUser()
-    fetchVideos(0)
+    init()
   }, [])
 
   useEffect(() => {
     setupInfiniteScroll()
   }, [videos])
 
-  async function getUser() {
+  async function init() {
+
     const { data } = await supabase.auth.getUser()
     setUser(data.user)
+
+    fetchVideos(0)
+
   }
 
-  async function fetchVideos(pageNumber: number) {
+  async function fetchVideos(pageNumber:number) {
 
     if (loading) return
-
     setLoading(true)
 
     const from = pageNumber * PAGE_SIZE
@@ -43,16 +45,11 @@ export default function Home() {
     const { data, error } = await supabase
       .from("videos")
       .select("*")
-      .order("created_at", { ascending: false })
-      .range(from, to)
+      .order("created_at", { ascending:false })
+      .range(from,to)
 
-    if (error) {
+    if (error || !data) {
       console.error(error)
-      setLoading(false)
-      return
-    }
-
-    if (!data) {
       setLoading(false)
       return
     }
@@ -62,30 +59,30 @@ export default function Home() {
     setVideos(prev => [...prev, ...data])
     setPage(pageNumber + 1)
 
-    // fetch profiles
-    const userIds = [...new Set(data.map(v => v.user_id))]
+    // load display names
 
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("id, display_name")
-      .in("id", userIds)
+    const userIds = [...new Set(data.map(v => v.user_id).filter(Boolean))]
 
-    const profileMap: any = {}
+    if (userIds.length > 0) {
 
-    profileData?.forEach(p => {
-      profileMap[p.id] = p.display_name
-    })
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", userIds)
 
-    setProfiles(prev => ({ ...prev, ...profileMap }))
+      const map:Record<string,string> = {}
+
+      profileData?.forEach(p => {
+        if (p.display_name) map[p.id] = p.display_name
+      })
+
+      setProfiles(prev => ({ ...prev, ...map }))
+    }
 
     setLoading(false)
-
   }
 
-  async function likeVideo(video: any) {
-
-    const { data } = await supabase.auth.getUser()
-    const user = data.user
+  async function likeVideo(video:any) {
 
     if (!user) return
 
@@ -107,7 +104,7 @@ export default function Home() {
       setVideos(prev =>
         prev.map(v =>
           v.id === video.id
-            ? { ...v, likes: Math.max((v.likes || 1) - 1, 0) }
+            ? { ...v, likes: Math.max((v.likes || 1) - 1,0) }
             : v
         )
       )
@@ -117,14 +114,14 @@ export default function Home() {
       await supabase
         .from("likes")
         .insert({
-          user_id: user.id,
-          video_id: video.id
+          user_id:user.id,
+          video_id:video.id
         })
 
       setVideos(prev =>
         prev.map(v =>
           v.id === video.id
-            ? { ...v, likes: (v.likes || 0) + 1 }
+            ? { ...v, likes:(v.likes || 0)+1 }
             : v
         )
       )
@@ -133,7 +130,7 @@ export default function Home() {
 
   }
 
-  function observeVideo(el: HTMLVideoElement | null) {
+  function observeVideo(el:HTMLVideoElement | null) {
 
     if (!el) return
 
@@ -145,17 +142,16 @@ export default function Home() {
 
           const video = entry.target as HTMLVideoElement
 
-          if (entry.isIntersecting) video.play().catch(() => {})
+          if (entry.isIntersecting) video.play().catch(()=>{})
           else video.pause()
 
         })
 
-      }, { threshold: 0.7 })
+      }, { threshold:0.7 })
 
     }
 
     observerRef.current.observe(el)
-
   }
 
   function setupInfiniteScroll() {
@@ -169,14 +165,13 @@ export default function Home() {
     })
 
     infiniteObserver.observe(sentinelRef.current)
-
   }
 
   return (
 
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
 
-      {videos.map((video, i) => (
+      {videos.map((video,i)=> (
 
         <div
           key={video.id}
@@ -184,7 +179,7 @@ export default function Home() {
         >
 
           <video
-            ref={observeVideo}
+            ref={(el)=>observeVideo(el)}
             src={video.video_url}
             loop
             muted
@@ -193,21 +188,25 @@ export default function Home() {
             className="h-full w-full object-cover"
           />
 
+          {/* creator + caption */}
+
           <div className="absolute bottom-24 left-6 text-white">
 
             <div className="font-bold">
-              @{profiles[video.user_id] || "anon"}
+              @{profiles[video.user_id] ?? "anon"}
             </div>
 
             <div>{video.caption}</div>
 
           </div>
 
+          {/* like button */}
+
           <button
-            onClick={() => likeVideo(video)}
+            onClick={()=>likeVideo(video)}
             className="absolute right-6 bottom-24 text-white text-3xl transition-transform active:scale-150"
           >
-            ❤️ {video.likes}
+            ❤️ {video.likes || 0}
           </button>
 
         </div>
@@ -223,7 +222,5 @@ export default function Home() {
       </div>
 
     </div>
-
   )
-
 }
