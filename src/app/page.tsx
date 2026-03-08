@@ -20,7 +20,7 @@ export default function Home() {
 
   useEffect(() => {
     getUser()
-    fetchVideos(0)
+    fetchVideos(0, true)
   }, [])
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function Home() {
     setUser(data.user)
   }
 
-  async function fetchVideos(pageNumber: number) {
+  async function fetchVideos(pageNumber: number, reset = false) {
     if (loading) return
 
     setLoading(true)
@@ -42,7 +42,10 @@ export default function Home() {
 
     const { data, error } = await supabase
       .from("videos")
-      .select("*")
+      .select(`
+        *,
+        likes:likes(count)
+      `)
       .order("created_at", { ascending: false })
       .range(from, to)
 
@@ -61,9 +64,43 @@ export default function Home() {
       setHasMore(false)
     }
 
-    setVideos((prev) => [...prev, ...data])
-    setPage(pageNumber + 1)
+    if (reset) {
+      setVideos(data)
+      setPage(1)
+    } else {
+      setVideos((prev) => [...prev, ...data])
+      setPage(pageNumber + 1)
+    }
+
     setLoading(false)
+  }
+
+  async function toggleLike(video: any) {
+    if (!user) return
+
+    const { data: existing } = await supabase
+      .from("likes")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("video_id", video.id)
+      .maybeSingle()
+
+    if (existing) {
+      await supabase
+        .from("likes")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("video_id", video.id)
+    } else {
+      await supabase
+        .from("likes")
+        .insert({
+          user_id: user.id,
+          video_id: video.id
+        })
+    }
+
+    fetchVideos(0, true)
   }
 
   function observeVideo(el: HTMLVideoElement | null) {
@@ -174,6 +211,20 @@ export default function Home() {
             <div className="font-bold">@anonymous</div>
             <div>{video.caption}</div>
           </div>
+
+          <div className="absolute right-6 bottom-24 flex flex-col items-center text-white">
+            <button
+              onClick={() => toggleLike(video)}
+              className="text-3xl transition-transform active:scale-150"
+            >
+              ❤️
+            </button>
+
+            <div className="text-sm">
+              {video.likes?.[0]?.count || 0}
+            </div>
+          </div>
+
         </motion.div>
       ))}
 
