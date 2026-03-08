@@ -65,24 +65,6 @@ export default function Home() {
     setLoading(false)
   }
 
-  async function likeVideo(video: any) {
-    const { error } = await supabase
-      .from("videos")
-      .update({ likes: video.likes + 1 })
-      .eq("id", video.id)
-
-    if (error) {
-      console.error("Like update failed:", error)
-      return
-    }
-
-    setVideos((prev) =>
-      prev.map((v) =>
-        v.id === video.id ? { ...v, likes: v.likes + 1 } : v
-      )
-    )
-  }
-
   function observeVideo(el: HTMLVideoElement | null) {
     if (!el) return
 
@@ -130,14 +112,14 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
+    <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black pt-16">
 
       <Header />
 
       {user && (
         <a
           href="/upload"
-          className="fixed top-20 right-6 z-50 bg-white text-black px-4 py-2 rounded"
+          className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded"
         >
           Upload
         </a>
@@ -146,7 +128,7 @@ export default function Home() {
       {!user && (
         <a
           href="/login"
-          className="fixed top-20 right-6 z-50 bg-white text-black px-4 py-2 rounded"
+          className="fixed top-6 right-6 z-50 bg-white text-black px-4 py-2 rounded"
         >
           Login
         </a>
@@ -173,13 +155,6 @@ export default function Home() {
             <div className="font-bold">@anonymous</div>
             <div>{video.caption}</div>
           </div>
-
-          <button
-            onClick={() => likeVideo(video)}
-            className="absolute right-6 bottom-24 text-white text-3xl transition-transform active:scale-150"
-          >
-            ❤️ {video.likes}
-          </button>
         </div>
       ))}
 
