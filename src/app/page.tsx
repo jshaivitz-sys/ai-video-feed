@@ -1,253 +1,230 @@
 "use client"
 
-import { useEffect,useRef,useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
 import Header from "@/components/Header"
+import VideoOverlay from "@/components/VideoOverlay"
 
 const PAGE_SIZE = 10
 
-export default function Home(){
+export default function Home() {
 
-const [videos,setVideos] = useState<any[]>([])
-const [profiles,setProfiles] = useState<Record<string,string>>({})
-const [user,setUser] = useState<any>(null)
-const [page,setPage] = useState(0)
-const [loading,setLoading] = useState(false)
-const [hasMore,setHasMore] = useState(true)
+  const [videos,setVideos] = useState<any[]>([])
+  const [profiles,setProfiles] = useState<Record<string,string>>({})
+  const [user,setUser] = useState<any>(null)
+  const [page,setPage] = useState(0)
+  const [loading,setLoading] = useState(false)
+  const [hasMore,setHasMore] = useState(true)
 
-const observerRef = useRef<IntersectionObserver | null>(null)
-const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
-useEffect(()=>{
- init()
-},[])
+  useEffect(()=>{
+    init()
+  },[])
 
-useEffect(()=>{
- setupInfiniteScroll()
-},[videos])
+  useEffect(()=>{
+    setupInfiniteScroll()
+  },[videos])
 
-async function init(){
+  async function init(){
 
- const { data } = await supabase.auth.getUser()
+    const { data } = await supabase.auth.getUser()
 
- if(data.user){
+    if(data.user){
+      setUser(data.user)
 
-   setUser(data.user)
+      const displayName = localStorage.getItem("display_name")
 
-   const displayName = localStorage.getItem("display_name")
+      if(displayName){
 
-   if(displayName){
+        await supabase
+          .from("profiles")
+          .upsert({
+            id:data.user.id,
+            display_name:displayName
+          })
 
-     await supabase
-       .from("profiles")
-       .upsert({
-         id:data.user.id,
-         display_name:displayName
-       })
+      }
+    }
 
-   }
+    fetchVideos(0)
+  }
 
- }
+  async function fetchVideos(pageNumber:number){
 
- fetchVideos(0)
+    if(loading) return
+    setLoading(true)
 
-}
+    const from = pageNumber * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
 
-async function fetchVideos(pageNumber:number){
+    const { data,error } = await supabase
+      .from("videos")
+      .select("*")
+      .order("created_at",{ascending:false})
+      .range(from,to)
 
- if(loading) return
+    if(error || !data){
+      console.error(error)
+      setLoading(false)
+      return
+    }
 
- setLoading(true)
+    if(data.length < PAGE_SIZE) setHasMore(false)
 
- const from = pageNumber * PAGE_SIZE
- const to = from + PAGE_SIZE - 1
+    setVideos(prev=>[...prev,...data])
+    setPage(pageNumber+1)
 
- const { data,error } = await supabase
-   .from("videos")
-   .select("*")
-   .order("created_at",{ascending:false})
-   .range(from,to)
+    const userIds = [...new Set(data.map(v=>v.user_id).filter(Boolean))]
 
- if(error || !data){
-   console.error(error)
-   setLoading(false)
-   return
- }
+    if(userIds.length > 0){
 
- if(data.length < PAGE_SIZE) setHasMore(false)
+      const { data:profileData } = await supabase
+        .from("profiles")
+        .select("id,display_name")
+        .in("id",userIds)
 
- setVideos(prev=>[...prev,...data])
- setPage(pageNumber+1)
+      const map:Record<string,string> = {}
 
- const userIds = [...new Set(data.map(v=>v.user_id).filter(Boolean))]
+      profileData?.forEach(p=>{
+        if(p.display_name) map[p.id] = p.display_name
+      })
 
- if(userIds.length > 0){
+      setProfiles(prev=>({...prev,...map}))
+    }
 
-   const { data:profileData } = await supabase
-     .from("profiles")
-     .select("id,display_name")
-     .in("id",userIds)
+    setLoading(false)
+  }
 
-   const map:Record<string,string> = {}
+  async function likeVideo(video:any){
 
-   profileData?.forEach(p=>{
-     if(p.display_name) map[p.id] = p.display_name
-   })
+    if(!user) return
 
-   setProfiles(prev=>({...prev,...map}))
- }
+    const { data:existing } = await supabase
+      .from("likes")
+      .select("id")
+      .eq("user_id",user.id)
+      .eq("video_id",video.id)
+      .maybeSingle()
 
- setLoading(false)
+    if(existing){
 
-}
+      await supabase
+        .from("likes")
+        .delete()
+        .eq("user_id",user.id)
+        .eq("video_id",video.id)
 
-async function likeVideo(video:any){
+      setVideos(prev =>
+        prev.map(v =>
+          v.id === video.id
+            ? { ...v, likes:Math.max((v.likes || 1)-1,0) }
+            : v
+        )
+      )
 
- if(!user) return
+    } else {
 
- const { data:existing } = await supabase
-   .from("likes")
-   .select("id")
-   .eq("user_id",user.id)
-   .eq("video_id",video.id)
-   .maybeSingle()
+      await supabase
+        .from("likes")
+        .insert({
+          user_id:user.id,
+          video_id:video.id
+        })
 
- if(existing){
+      setVideos(prev =>
+        prev.map(v =>
+          v.id === video.id
+            ? { ...v, likes:(v.likes || 0)+1 }
+            : v
+        )
+      )
 
-   await supabase
-     .from("likes")
-     .delete()
-     .eq("user_id",user.id)
-     .eq("video_id",video.id)
+    }
+  }
 
-   setVideos(prev =>
-     prev.map(v =>
-       v.id === video.id
-         ? { ...v, likes:(v.likes||1)-1 }
-         : v
-     )
-   )
+  function observeVideo(el:HTMLVideoElement | null){
 
- } else {
+    if(!el) return
 
-   await supabase
-     .from("likes")
-     .insert({
-       user_id:user.id,
-       video_id:video.id
-     })
+    if(!observerRef.current){
 
-   setVideos(prev =>
-     prev.map(v =>
-       v.id === video.id
-         ? { ...v, likes:(v.likes||0)+1 }
-         : v
-     )
-   )
+      observerRef.current = new IntersectionObserver(entries=>{
 
- }
+        entries.forEach(entry=>{
 
-}
+          const video = entry.target as HTMLVideoElement
 
-function observeVideo(el:HTMLVideoElement|null){
+          if(entry.isIntersecting){
+            video.play().catch(()=>{})
+          } else {
+            video.pause()
+          }
 
- if(!el) return
+        })
 
- if(!observerRef.current){
+      },{threshold:0.7})
 
-   observerRef.current = new IntersectionObserver(entries=>{
+    }
 
-     entries.forEach(entry=>{
+    observerRef.current.observe(el)
+  }
 
-       const video = entry.target as HTMLVideoElement
+  function setupInfiniteScroll(){
 
-       if(entry.isIntersecting){
-         video.play().catch(()=>{})
-       } else {
-         video.pause()
-       }
+    if(!sentinelRef.current) return
 
-     })
+    const infiniteObserver = new IntersectionObserver(entries=>{
 
-   },{threshold:0.7})
+      if(entries[0].isIntersecting && hasMore){
+        fetchVideos(page)
+      }
 
- }
+    })
 
- observerRef.current.observe(el)
+    infiniteObserver.observe(sentinelRef.current)
+  }
 
-}
+  return(
 
-function setupInfiniteScroll(){
+    <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
 
- if(!sentinelRef.current) return
+      <Header/>
 
- const infiniteObserver = new IntersectionObserver(entries=>{
+      {videos.map((video,i)=>(
+        <div
+          key={video.id}
+          className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
+        >
 
-   if(entries[0].isIntersecting && hasMore){
-     fetchVideos(page)
-   }
+          <VideoOverlay
+            video={video}
+            observeVideo={observeVideo}
+            likeVideo={likeVideo}
+          />
 
- })
+          <div className="absolute bottom-24 left-6 text-white">
 
- infiniteObserver.observe(sentinelRef.current)
+            <div className="font-bold">
+              @{profiles[video.user_id] ?? "anon"}
+            </div>
 
-}
+            <div>{video.caption}</div>
 
-return(
+          </div>
 
-<div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
+        </div>
+      ))}
 
-<Header/>
+      <div
+        ref={sentinelRef}
+        className="h-20 flex items-center justify-center text-white"
+      >
+        {loading && "Loading more..."}
+        {!hasMore && "End of feed"}
+      </div>
 
-{videos.map((video,i)=>(
-<div
- key={video.id}
- className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
->
-
-<video
- ref={(el)=>observeVideo(el)}
- src={video.video_url}
- loop
- muted
- playsInline
- preload={i<2?"auto":"metadata"}
- className="h-full w-full object-cover"
-/>
-
-<div className="absolute bottom-24 left-6 text-white">
-
-<div className="font-bold">
-@{profiles[video.user_id] ?? "anon"}
-</div>
-
-<div>{video.caption}</div>
-
-</div>
-
-<button
- onClick={()=>likeVideo(video)}
- className="absolute right-6 bottom-24 text-white text-3xl transition-transform active:scale-150"
->
-❤️ {video.likes || 0}
-</button>
-
-</div>
-))}
-
-<div
- ref={sentinelRef}
- className="h-20 flex items-center justify-center text-white"
->
-
-{loading && "Loading more..."}
-
-{!hasMore && "End of feed"}
-
-</div>
-
-</div>
-
-)
-
+    </div>
+  )
 }
