@@ -8,7 +8,7 @@ export default function VideoOverlay() {
   const [progress, setProgress] = useState(0)
 
   function getVideo(el: any) {
-    return el.closest(".video-container")?.querySelector("video")
+    return el.closest(".video-container")?.querySelector("video") as HTMLVideoElement | null
   }
 
   function togglePlay(e: any) {
@@ -18,7 +18,7 @@ export default function VideoOverlay() {
     if (!v) return
 
     if (v.paused) {
-      v.play()
+      v.play().catch(() => {})
       setPlaying(true)
     } else {
       v.pause()
@@ -44,7 +44,9 @@ export default function VideoOverlay() {
 
     v.muted = false
     v.volume = 1
+    v.play().catch(() => {})
     setMuted(false)
+    setPlaying(true)
   }
 
   function updateProgress(e: any) {
@@ -56,7 +58,6 @@ export default function VideoOverlay() {
   function scrub(e: any) {
     const timeline = e.currentTarget
     const v = getVideo(timeline)
-
     if (!v || !v.duration) return
 
     const rect = timeline.getBoundingClientRect()
@@ -110,11 +111,17 @@ export default function VideoOverlay() {
 
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center gap-4">
-            <button onClick={togglePlay} className="text-white text-xl">
+            <button
+              onClick={togglePlay}
+              className="text-white text-xl"
+            >
               {playing ? "❚❚" : "▶"}
             </button>
 
-            <button onClick={toggleVolume} className="text-white text-xl">
+            <button
+              onClick={toggleVolume}
+              className="text-white text-xl"
+            >
               {muted ? "🔇" : "🔊"}
             </button>
           </div>
