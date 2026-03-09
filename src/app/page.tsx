@@ -6,72 +6,69 @@ import Header from "@/components/Header"
 import VideoOverlay from "@/components/VideoOverlay"
 
 const PAGE_SIZE = 6
+const PLAYER_POOL = 5
 
-export default function Home() {
+export default function Home(){
 
-  const [videos, setVideos] = useState<any[]>([])
-  const [profiles, setProfiles] = useState<Record<string,string>>({})
-  const [page, setPage] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
+  const [videos,setVideos] = useState<any[]>([])
+  const [profiles,setProfiles] = useState<Record<string,string>>({})
+  const [page,setPage] = useState(0)
+  const [loading,setLoading] = useState(false)
+  const [hasMore,setHasMore] = useState(true)
 
   const observerRef = useRef<IntersectionObserver | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
-  useEffect(() => {
-    fetchVideos(0, true)
-  }, [])
+  useEffect(()=>{
+    fetchVideos(0,true)
+  },[])
 
-  useEffect(() => {
+  useEffect(()=>{
     setupInfiniteScroll()
+  },[videos])
 
-    return () => {
-      if (observerRef.current) observerRef.current.disconnect()
-    }
-  }, [videos])
+  async function fetchVideos(pageNumber:number,reset=false){
 
-  async function fetchVideos(pageNumber:number, reset=false){
-
-    if (loading) return
+    if(loading) return
     setLoading(true)
 
     const from = pageNumber * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
 
-    const { data, error } = await supabase
+    const {data,error} = await supabase
       .from("videos")
       .select("*")
       .order("created_at",{ascending:false})
       .range(from,to)
 
-    if (error){
+    if(error){
       console.error(error)
       setLoading(false)
       return
     }
 
-    if (!data){
+    if(!data){
       setLoading(false)
       return
     }
 
-    const normalized = data.map(v => ({
+    const normalized = data.map(v=>({
       ...v,
       likes: typeof v.likes === "number" ? v.likes : 0
     }))
 
     const ids = normalized
-      .map(v => v.user_id)
+      .map(v=>v.user_id)
       .filter(Boolean)
 
-    if (ids.length){
+    if(ids.length){
 
-      const { data:profileRows } = await supabase
+      const {data:profileRows} = await supabase
         .from("profiles")
         .select("id,display_name")
         .in("id",ids)
 
-      if (profileRows){
+      if(profileRows){
 
         const map:Record<string,string> = {}
 
@@ -81,18 +78,18 @@ export default function Home() {
           }
         })
 
-        setProfiles(prev => ({...prev,...map}))
+        setProfiles(prev=>({...prev,...map}))
       }
     }
 
-    if (normalized.length < PAGE_SIZE) setHasMore(false)
+    if(normalized.length < PAGE_SIZE) setHasMore(false)
 
-    if (reset){
+    if(reset){
       setVideos(normalized)
       setPage(1)
     }else{
-      setVideos(prev => [...prev,...normalized])
-      setPage(pageNumber + 1)
+      setVideos(prev=>[...prev,...normalized])
+      setPage(pageNumber+1)
     }
 
     setLoading(false)
@@ -100,14 +97,14 @@ export default function Home() {
 
   async function toggleLike(video:any){
 
-    const { data:{user} } = await supabase.auth.getUser()
+    const {data:{user}} = await supabase.auth.getUser()
 
     if(!user){
       alert("Login to like videos")
       return
     }
 
-    const { data:existing } = await supabase
+    const {data:existing} = await supabase
       .from("likes")
       .select("id")
       .eq("user_id",user.id)
@@ -124,7 +121,7 @@ export default function Home() {
       setVideos(prev =>
         prev.map(v =>
           v.id === video.id
-            ? {...v, likes: Math.max((v.likes || 1) - 1,0)}
+            ? {...v,likes:Math.max((v.likes||1)-1,0)}
             : v
         )
       )
@@ -141,7 +138,7 @@ export default function Home() {
       setVideos(prev =>
         prev.map(v =>
           v.id === video.id
-            ? {...v, likes:(v.likes || 0) + 1}
+            ? {...v,likes:(v.likes||0)+1}
             : v
         )
       )
@@ -154,21 +151,35 @@ export default function Home() {
 
     if(!observerRef.current){
 
-      observerRef.current = new IntersectionObserver(entries => {
+      observerRef.current = new IntersectionObserver(entries=>{
 
-        entries.forEach(entry => {
+        entries.forEach(entry=>{
 
           const video = entry.target as HTMLVideoElement
 
           if(entry.isIntersecting){
+
+            document.querySelectorAll("video").forEach(v=>{
+              const vid = v as HTMLVideoElement
+              vid.pause()
+              vid.muted = true
+            })
+
+            video.muted = false
             video.play().catch(()=>{})
+
           }else{
+
             video.pause()
+            video.muted = true
+
           }
 
         })
 
-      },{threshold:0.6})
+      },{
+        threshold:0.55
+      })
     }
 
     observerRef.current.observe(el)
@@ -178,7 +189,7 @@ export default function Home() {
 
     if(!sentinelRef.current) return
 
-    const io = new IntersectionObserver(entries => {
+    const io = new IntersectionObserver(entries=>{
 
       if(entries[0].isIntersecting && hasMore && !loading){
         fetchVideos(page)
@@ -189,6 +200,9 @@ export default function Home() {
     io.observe(sentinelRef.current)
   }
 
+  // video recycling pool
+  const visibleVideos = videos.slice(0,PLAYER_POOL)
+
   return(
 
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
@@ -197,11 +211,11 @@ export default function Home() {
 
       <main className="pt-16">
 
-        {videos.map((video,i)=>(
+        {visibleVideos.map((video,i)=>(
 
           <div
             key={video.id}
-            className="video-container h-screen w-screen snap-start relative flex items-center justify-center bg-black"
+            className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
           >
 
             <video
@@ -217,8 +231,6 @@ export default function Home() {
 
             <VideoOverlay/>
 
-            {/* Like button */}
-
             <div className="absolute right-6 bottom-32 flex flex-col items-center z-30">
 
               <button
@@ -233,8 +245,6 @@ export default function Home() {
               </div>
 
             </div>
-
-            {/* Username + caption */}
 
             <div className="absolute bottom-24 left-6 text-white z-20">
 
@@ -255,11 +265,11 @@ export default function Home() {
           className="h-20 flex items-center justify-center text-white"
         >
           {loading && "Loading more..."}
-          {!hasMore && videos.length > 0 && "End of feed"}
         </div>
 
       </main>
 
     </div>
+
   )
 }
