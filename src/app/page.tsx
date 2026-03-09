@@ -51,7 +51,7 @@ export default function Home() {
 
     const {data,error} = await supabase
       .from("videos")
-      .select("*")
+      .select("id,video_url,likes,created_by,caption,created_at")
       .order("created_at",{ascending:false})
       .range(from,to)
 
@@ -99,12 +99,11 @@ export default function Home() {
       })
 
     if(error){
-      return // already liked
+      return
     }
 
     const newLikes = (video.likes || 0) + 1
 
-    // update UI instantly
     setVideos(prev =>
       prev.map(v =>
         v.id === videoId
@@ -204,8 +203,6 @@ export default function Home() {
 
             <VideoOverlay/>
 
-            {/* HEART */}
-
             <div className="absolute right-6 bottom-32 flex flex-col items-center z-50">
 
               <button
@@ -220,8 +217,6 @@ export default function Home() {
               </span>
 
             </div>
-
-            {/* CREATOR */}
 
             <div className="absolute bottom-24 left-6 text-white z-20">
 
