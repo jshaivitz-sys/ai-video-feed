@@ -55,29 +55,37 @@ export default function Home() {
     if(reset){
       setVideos(data)
       setPage(1)
-    }else{
-      setVideos(prev=>[...prev,...data])
-      setPage(pageNumber+1)
+    } else {
+      setVideos(prev => [...prev,...data])
+      setPage(pageNumber + 1)
     }
 
     setLoading(false)
   }
 
-  async function toggleLike(video:any){
+  async function likeVideo(videoId:string){
 
-    const {data:{user}} = await supabase.auth.getUser()
+    // Optimistic UI update
+    setVideos(prev =>
+      prev.map(v =>
+        v.id === videoId
+          ? { ...v, likes: (v.likes || 0) + 1 }
+          : v
+      )
+    )
 
-    if(!user){
-      alert("Login to like videos")
-      return
-    }
+    const video = videos.find(v => v.id === videoId)
 
-    await supabase
-      .from("likes")
-      .insert({
-        user_id:user.id,
-        video_id:video.id
+    const { error } = await supabase
+      .from("videos")
+      .update({
+        likes: (video?.likes || 0) + 1
       })
+      .eq("id",videoId)
+
+    if(error){
+      console.error(error)
+    }
 
   }
 
@@ -105,7 +113,7 @@ export default function Home() {
 
             video.play().catch(()=>{})
 
-          }else{
+          } else {
 
             video.pause()
 
@@ -165,20 +173,24 @@ export default function Home() {
 
             <VideoOverlay/>
 
-            {/* Like button */}
+            {/* HEART + COUNTER */}
 
-            <div className="absolute right-6 bottom-32 flex flex-col items-center z-30">
+            <div className="absolute right-6 bottom-32 flex flex-col items-center z-50">
 
               <button
-                onClick={()=>toggleLike(video)}
+                onClick={()=>likeVideo(video.id)}
                 className="text-white text-4xl active:scale-150 transition"
               >
                 ❤️
               </button>
 
+              <span className="text-white text-sm mt-1">
+                {video.likes || 0}
+              </span>
+
             </div>
 
-            {/* Creator + caption */}
+            {/* CREATOR + CAPTION */}
 
             <div className="absolute bottom-24 left-6 text-white z-20">
 
