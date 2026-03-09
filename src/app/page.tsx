@@ -156,12 +156,11 @@ export default function Home(){
 
           if(entry.isIntersecting){
 
-            // stop other videos completely
             document.querySelectorAll("video").forEach(v=>{
               const vid = v as HTMLVideoElement
               if(vid !== video){
                 vid.pause()
-                vid.currentTime = vid.currentTime
+                vid.muted = true
               }
             })
 
@@ -218,7 +217,7 @@ export default function Home(){
               src={video.video_url}
               autoPlay
               loop
-              muted
+              defaultMuted
               playsInline
               preload={i < 3 ? "auto" : "metadata"}
               className="h-full w-full object-cover"
