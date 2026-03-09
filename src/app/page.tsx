@@ -6,7 +6,6 @@ import Header from "@/components/Header"
 import VideoOverlay from "@/components/VideoOverlay"
 
 const PAGE_SIZE = 6
-const PLAYER_POOL = 5
 
 export default function Home(){
 
@@ -57,9 +56,7 @@ export default function Home(){
       likes: typeof v.likes === "number" ? v.likes : 0
     }))
 
-    const ids = normalized
-      .map(v=>v.user_id)
-      .filter(Boolean)
+    const ids = normalized.map(v=>v.user_id).filter(Boolean)
 
     if(ids.length){
 
@@ -159,26 +156,27 @@ export default function Home(){
 
           if(entry.isIntersecting){
 
+            // stop other videos completely
             document.querySelectorAll("video").forEach(v=>{
               const vid = v as HTMLVideoElement
-              vid.pause()
-              vid.muted = true
+              if(vid !== video){
+                vid.pause()
+                vid.currentTime = vid.currentTime
+              }
             })
 
-            video.muted = false
             video.play().catch(()=>{})
 
           }else{
 
             video.pause()
-            video.muted = true
 
           }
 
         })
 
       },{
-        threshold:0.55
+        threshold:0.6
       })
     }
 
@@ -200,9 +198,6 @@ export default function Home(){
     io.observe(sentinelRef.current)
   }
 
-  // video recycling pool
-  const visibleVideos = videos.slice(0,PLAYER_POOL)
-
   return(
 
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
@@ -211,7 +206,7 @@ export default function Home(){
 
       <main className="pt-16">
 
-        {visibleVideos.map((video,i)=>(
+        {videos.map((video,i)=>(
 
           <div
             key={video.id}
@@ -231,6 +226,8 @@ export default function Home(){
 
             <VideoOverlay/>
 
+            {/* LIKE BUTTON */}
+
             <div className="absolute right-6 bottom-32 flex flex-col items-center z-30">
 
               <button
@@ -245,6 +242,8 @@ export default function Home(){
               </div>
 
             </div>
+
+            {/* USERNAME + CAPTION */}
 
             <div className="absolute bottom-24 left-6 text-white z-20">
 
