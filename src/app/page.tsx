@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase"
 import Header from "@/components/Header"
 import VideoOverlay from "@/components/VideoOverlay"
 
-const PAGE_SIZE = 6
+const PAGE_SIZE = 8
 
 export default function Home() {
 
@@ -22,8 +22,24 @@ export default function Home() {
   },[])
 
   useEffect(()=>{
-    setupInfiniteScroll()
-  },[videos])
+    const el = sentinelRef.current
+    if(!el) return
+  
+    const observer = new IntersectionObserver(entries=>{
+  
+      if(entries[0].isIntersecting && hasMore && !loading){
+        fetchVideos(page)
+      }
+  
+    },{
+      rootMargin:"600px"
+    })
+  
+    observer.observe(el)
+  
+    return () => observer.disconnect()
+  
+  },[page,hasMore,loading])
 
   async function fetchVideos(pageNumber:number,reset=false){
 
