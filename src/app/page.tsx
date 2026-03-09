@@ -7,7 +7,7 @@ import VideoOverlay from "@/components/VideoOverlay"
 
 const PAGE_SIZE = 6
 
-export default function Home(){
+export default function Home() {
 
   const [videos,setVideos] = useState<any[]>([])
   const [profiles,setProfiles] = useState<Record<string,string>>({})
@@ -157,8 +157,8 @@ export default function Home(){
           if(entry.isIntersecting){
 
             document.querySelectorAll("video").forEach(v=>{
-              const vid = v as HTMLVideoElement
-              if(vid !== video){
+              if(v !== video){
+                const vid = v as HTMLVideoElement
                 vid.pause()
                 vid.muted = true
               }
@@ -184,7 +184,8 @@ export default function Home(){
 
   function setupInfiniteScroll(){
 
-    if(!sentinelRef.current) return
+    const el = sentinelRef.current
+    if(!el) return
 
     const io = new IntersectionObserver(entries=>{
 
@@ -194,10 +195,10 @@ export default function Home(){
 
     })
 
-    io.observe(sentinelRef.current)
+    io.observe(el)
   }
 
-  return(
+  return (
 
     <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
 
@@ -209,7 +210,7 @@ export default function Home(){
 
           <div
             key={video.id}
-            className="h-screen w-screen snap-start relative flex items-center justify-center bg-black"
+            className="video-container h-screen w-screen snap-start relative flex items-center justify-center bg-black"
           >
 
             <video
@@ -217,15 +218,13 @@ export default function Home(){
               src={video.video_url}
               autoPlay
               loop
-              defaultMuted
+              muted
               playsInline
               preload={i < 3 ? "auto" : "metadata"}
               className="h-full w-full object-cover"
             />
 
             <VideoOverlay/>
-
-            {/* LIKE BUTTON */}
 
             <div className="absolute right-6 bottom-32 flex flex-col items-center z-30">
 
@@ -241,8 +240,6 @@ export default function Home(){
               </div>
 
             </div>
-
-            {/* USERNAME + CAPTION */}
 
             <div className="absolute bottom-24 left-6 text-white z-20">
 
