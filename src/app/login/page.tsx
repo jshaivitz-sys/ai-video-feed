@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 
 export default function LoginPage() {
@@ -9,12 +9,15 @@ export default function LoginPage() {
   const [displayName,setDisplayName] = useState("")
   const [loading,setLoading] = useState(false)
 
-  async function login() {
+  async function sendLogin() {
 
     if(!email || !displayName){
-      alert("Please enter email and display name")
+      alert("Enter email and display name")
       return
     }
+
+    // store name locally so we can save it after login
+    localStorage.setItem("display_name",displayName)
 
     setLoading(true)
 
@@ -34,23 +37,33 @@ export default function LoginPage() {
     alert("Check your email for the login link")
 
     setLoading(false)
-
   }
 
-  async function saveProfile() {
+  // runs AFTER user clicks email login link
+  useEffect(()=>{
 
-    const { data:{user} } = await supabase.auth.getUser()
+    async function saveProfile(){
 
-    if(!user) return
+      const storedName = localStorage.getItem("display_name")
+      if(!storedName) return
 
-    await supabase
-      .from("profiles")
-      .upsert({
-        id:user.id,
-        display_name:displayName
-      })
+      const { data:{user} } = await supabase.auth.getUser()
 
-  }
+      if(!user) return
+
+      await supabase
+        .from("profiles")
+        .upsert({
+          id:user.id,
+          display_name:storedName
+        })
+
+      localStorage.removeItem("display_name")
+    }
+
+    saveProfile()
+
+  },[])
 
   return (
 
@@ -77,18 +90,11 @@ export default function LoginPage() {
         />
 
         <button
-          onClick={login}
+          onClick={sendLogin}
           disabled={loading}
           className="w-full bg-green-400 text-black font-semibold p-3 rounded"
         >
           {loading ? "Sending..." : "Send Login Link"}
-        </button>
-
-        <button
-          onClick={saveProfile}
-          className="w-full bg-white text-black p-3 rounded"
-        >
-          Save Display Name
         </button>
 
       </div>
