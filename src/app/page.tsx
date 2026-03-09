@@ -197,7 +197,7 @@ export default function Home() {
               loop
               muted
               playsInline
-              preload={i < 3 ? "auto" : "metadata"}
+              preload="metadata"
               className="h-full w-full object-cover"
             />
 
