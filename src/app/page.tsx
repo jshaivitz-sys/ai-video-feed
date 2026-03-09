@@ -11,8 +11,6 @@ export default function Home() {
 
   const [videos, setVideos] = useState<any[]>([])
   const [profiles, setProfiles] = useState<any>({})
-  const [user, setUser] = useState<any>(null)
-
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
@@ -21,7 +19,6 @@ export default function Home() {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    getUser()
     fetchVideos(0)
   }, [])
 
@@ -29,15 +26,9 @@ export default function Home() {
     setupInfiniteScroll()
   }, [videos])
 
-  async function getUser() {
-    const { data } = await supabase.auth.getUser()
-    setUser(data.user)
-  }
-
   async function fetchVideos(pageNumber: number) {
 
     if (loading) return
-
     setLoading(true)
 
     const from = pageNumber * PAGE_SIZE
@@ -51,7 +42,9 @@ export default function Home() {
 
     if (!data) return
 
-    const userIds = data.map(v => v.user_id).filter(Boolean)
+    const userIds = data
+      .map(v => v.user_id)
+      .filter(Boolean)
 
     if (userIds.length > 0) {
 
@@ -191,19 +184,15 @@ export default function Home() {
 
             <VideoOverlay />
 
-            {/* USERNAME + CAPTION */}
-
             <div className="absolute bottom-24 left-6 text-white z-20">
 
               <div className="font-bold">
-                @{video.user_id && profiles[video.user_id] ? profiles[video.user_id] : "anon"}
+                @{profiles[video.user_id] || "anon"}
               </div>
 
               <div>{video.caption}</div>
 
             </div>
-
-            {/* LIKE BUTTON */}
 
             <button
               onClick={() => toggleLike(video)}
