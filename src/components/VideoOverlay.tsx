@@ -1,270 +1,99 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { supabase } from "../lib/supabase"
-import Header from "@/components/Header"
-import VideoOverlay from "@/components/VideoOverlay"
+export default function VideoOverlay() {
 
-const PAGE_SIZE = 6
+  function getVideo(el: HTMLElement): HTMLVideoElement | null {
 
-export default function Home() {
+    const container = el.closest(".video-container")
 
-  const [videos,setVideos] = useState<any[]>([])
-  const [profiles,setProfiles] = useState<Record<string,string>>({})
-  const [page,setPage] = useState(0)
-  const [loading,setLoading] = useState(false)
-  const [hasMore,setHasMore] = useState(true)
+    if (!container) return null
 
-  const observerRef = useRef<IntersectionObserver | null>(null)
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
+    return container.querySelector("video")
 
-  useEffect(()=>{
-    fetchVideos(0,true)
-  },[])
-
-  useEffect(()=>{
-    setupInfiniteScroll()
-  },[videos])
-
-  async function fetchVideos(pageNumber:number,reset=false){
-
-    if(loading) return
-    setLoading(true)
-
-    const from = pageNumber * PAGE_SIZE
-    const to = from + PAGE_SIZE - 1
-
-    const {data,error} = await supabase
-      .from("videos")
-      .select("*")
-      .order("created_at",{ascending:false})
-      .range(from,to)
-
-    if(error){
-      console.error(error)
-      setLoading(false)
-      return
-    }
-
-    if(!data){
-      setLoading(false)
-      return
-    }
-
-    const normalized = data.map(v=>({
-      ...v,
-      likes: typeof v.likes === "number" ? v.likes : 0
-    }))
-
-    const ids = normalized.map(v=>v.user_id).filter(Boolean)
-
-    if(ids.length){
-
-      const {data:profileRows} = await supabase
-        .from("profiles")
-        .select("id,display_name")
-        .in("id",ids)
-
-      if(profileRows){
-
-        const map:Record<string,string> = {}
-
-        profileRows.forEach((p:any)=>{
-          if(p.id && p.display_name){
-            map[p.id] = p.display_name
-          }
-        })
-
-        setProfiles(prev=>({...prev,...map}))
-      }
-    }
-
-    if(normalized.length < PAGE_SIZE) setHasMore(false)
-
-    if(reset){
-      setVideos(normalized)
-      setPage(1)
-    }else{
-      setVideos(prev=>[...prev,...normalized])
-      setPage(pageNumber+1)
-    }
-
-    setLoading(false)
   }
 
-  async function toggleLike(video:any){
+  function unmute(e: React.MouseEvent<HTMLButtonElement>) {
 
-    const {data:{user}} = await supabase.auth.getUser()
+    e.stopPropagation()
 
-    if(!user){
-      alert("Login to like videos")
-      return
-    }
+    const v = getVideo(e.currentTarget)
+    if (!v) return
 
-    const {data:existing} = await supabase
-      .from("likes")
-      .select("id")
-      .eq("user_id",user.id)
-      .eq("video_id",video.id)
-      .maybeSingle()
+    v.muted = false
+    v.volume = 1
+    v.play().catch(()=>{})
 
-    if(existing){
-
-      await supabase
-        .from("likes")
-        .delete()
-        .eq("id",existing.id)
-
-      setVideos(prev =>
-        prev.map(v =>
-          v.id === video.id
-            ? {...v,likes:Math.max((v.likes||1)-1,0)}
-            : v
-        )
-      )
-
-    }else{
-
-      await supabase
-        .from("likes")
-        .insert({
-          user_id:user.id,
-          video_id:video.id
-        })
-
-      setVideos(prev =>
-        prev.map(v =>
-          v.id === video.id
-            ? {...v,likes:(v.likes||0)+1}
-            : v
-        )
-      )
-    }
   }
 
-  function observeVideo(el:HTMLVideoElement | null){
+  function togglePlay(e: React.MouseEvent<HTMLButtonElement>) {
 
-    if(!el) return
+    e.stopPropagation()
 
-    if(!observerRef.current){
+    const v = getVideo(e.currentTarget)
+    if (!v) return
 
-      observerRef.current = new IntersectionObserver(entries=>{
-
-        entries.forEach(entry=>{
-
-          const video = entry.target as HTMLVideoElement
-
-          if(entry.isIntersecting){
-
-            document.querySelectorAll("video").forEach(v=>{
-              if(v !== video){
-                const vid = v as HTMLVideoElement
-                vid.pause()
-                vid.muted = true
-              }
-            })
-
-            video.play().catch(()=>{})
-
-          }else{
-
-            video.pause()
-
-          }
-
-        })
-
-      },{
-        threshold:0.6
-      })
+    if (v.paused) {
+      v.play().catch(()=>{})
+    } else {
+      v.pause()
     }
 
-    observerRef.current.observe(el)
   }
 
-  function setupInfiniteScroll(){
+  function toggleMute(e: React.MouseEvent<HTMLButtonElement>) {
 
-    const el = sentinelRef.current
-    if(!el) return
+    e.stopPropagation()
 
-    const io = new IntersectionObserver(entries=>{
+    const v = getVideo(e.currentTarget)
+    if (!v) return
 
-      if(entries[0].isIntersecting && hasMore && !loading){
-        fetchVideos(page)
-      }
+    v.muted = !v.muted
 
-    })
-
-    io.observe(el)
   }
 
   return (
 
-    <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
+    <div className="absolute inset-0 flex flex-col justify-end z-20 pointer-events-none">
 
-      <Header/>
+      {/* HEAR SOUND */}
 
-      <main className="pt-16">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
 
-        {videos.map((video,i)=>(
-
-          <div
-            key={video.id}
-            className="video-container h-screen w-screen snap-start relative flex items-center justify-center bg-black"
-          >
-
-            <video
-              ref={(el)=>observeVideo(el)}
-              src={video.video_url}
-              autoPlay
-              loop
-              defaultMuted
-              playsInline
-              preload={i < 3 ? "auto" : "metadata"}
-              className="h-full w-full object-cover"
-            />
-
-            <VideoOverlay/>
-
-            <div className="absolute right-6 bottom-32 flex flex-col items-center z-30">
-
-              <button
-                onClick={()=>toggleLike(video)}
-                className="text-white text-4xl active:scale-150 transition"
-              >
-                ❤️
-              </button>
-
-              <div className="text-white text-sm mt-1">
-                {video.likes || 0}
-              </div>
-
-            </div>
-
-            <div className="absolute bottom-24 left-6 text-white z-20">
-
-              <div className="font-bold">
-                @{video.user_id && profiles[video.user_id] ? profiles[video.user_id] : "anon"}
-              </div>
-
-              <div>{video.caption}</div>
-
-            </div>
-
-          </div>
-
-        ))}
-
-        <div
-          ref={sentinelRef}
-          className="h-20 flex items-center justify-center text-white"
+        <button
+          onClick={unmute}
+          className="bg-black/70 text-white px-6 py-3 rounded-lg text-lg backdrop-blur"
         >
-          {loading && "Loading more..."}
+          🔊 Hear Sound
+        </button>
+
+      </div>
+
+      {/* CONTROLS */}
+
+      <div className="p-4 flex justify-between text-white pointer-events-auto">
+
+        <div className="flex gap-4">
+
+          <button
+            onClick={togglePlay}
+            className="text-xl"
+          >
+            ▶ / ❚❚
+          </button>
+
+          <button
+            onClick={toggleMute}
+            className="text-xl"
+          >
+            🔇 / 🔊
+          </button>
+
         </div>
 
-      </main>
+      </div>
 
     </div>
 
   )
+
 }
