@@ -4,75 +4,70 @@ import { useState } from "react"
 import { supabase } from "../../lib/supabase"
 import AuthCard from "@/components/AuthCard"
 
-export default function LoginPage() {
+export default function LoginPage(){
 
-  const [email,setEmail] = useState("")
-  const [displayName,setDisplayName] = useState("")
-  const [loading,setLoading] = useState(false)
+ const [email,setEmail] = useState("")
+ const [displayName,setDisplayName] = useState("")
+ const [loading,setLoading] = useState(false)
 
-  async function login() {
+ async function login(){
 
-    if(!email){
-      alert("Enter email")
-      return
-    }
+  if(!email) return alert("Enter email")
+  if(!displayName) return alert("Enter display name")
 
-    if(!displayName){
-      alert("Enter display name")
-      return
-    }
+  setLoading(true)
 
-    setLoading(true)
+  localStorage.setItem("display_name",displayName)
 
-    // save display name locally for later
-    localStorage.setItem("display_name",displayName)
+  const { error } = await supabase.auth.signInWithOtp({
+   email
+  })
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email
-    })
-
-    if(error){
-      alert(error.message)
-    } else {
-      alert("Check your email for login link")
-    }
-
-    setLoading(false)
+  if(error){
+   console.error(error)
+   alert("Login failed")
+  } else {
+   alert("Check your email for the login link")
   }
 
-  return(
+  setLoading(false)
 
-    <AuthCard title="Login">
+ }
 
-      <div className="space-y-4">
+ return(
 
-        <input
-          type="text"
-          placeholder="Display Name"
-          value={displayName}
-          onChange={(e)=>setDisplayName(e.target.value)}
-          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
-        />
+ <AuthCard title="Login">
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e)=>setEmail(e.target.value)}
-          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
-        />
+  <div className="space-y-4">
 
-        <button
-          onClick={login}
-          disabled={loading}
-          className="w-full bg-green-400 text-black font-semibold py-3 rounded hover:bg-green-300 transition"
-        >
-          {loading ? "Sending link..." : "Send Login Link"}
-        </button>
+   <input
+    type="text"
+    placeholder="Display Name"
+    value={displayName}
+    onChange={(e)=>setDisplayName(e.target.value)}
+    className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
+   />
 
-      </div>
+   <input
+    type="email"
+    placeholder="Email"
+    value={email}
+    onChange={(e)=>setEmail(e.target.value)}
+    className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
+   />
 
-    </AuthCard>
+   <button
+    onClick={login}
+    disabled={loading}
+    className="w-full bg-green-400 text-black font-semibold py-3 rounded hover:bg-green-300 transition"
+   >
+    {loading ? "Sending link..." : "Login"}
+   </button>
 
-  )
+  </div>
+
+ </AuthCard>
+
+ )
+
 }
