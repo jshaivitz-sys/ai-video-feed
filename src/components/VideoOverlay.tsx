@@ -171,16 +171,6 @@ export default function VideoOverlay({
 
           <div className="flex items-center gap-6">
 
-            <button
-              onClick={(e)=>{
-                e.stopPropagation()
-                toggleLike(video)
-              }}
-              className="text-white text-xl active:scale-150 transition"
-            >
-              ❤️
-            </button>
-
             <div className="text-white text-xl opacity-70">
               ↓
             </div>

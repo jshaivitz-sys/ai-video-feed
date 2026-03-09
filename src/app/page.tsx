@@ -19,13 +19,8 @@ const [hasMore,setHasMore] = useState(true)
 const observerRef = useRef<IntersectionObserver | null>(null)
 const sentinelRef = useRef<HTMLDivElement | null>(null)
 
-useEffect(()=>{
- init()
-},[])
-
-useEffect(()=>{
- setupInfiniteScroll()
-},[videos])
+useEffect(()=>{ init() },[])
+useEffect(()=>{ setupInfiniteScroll() },[videos])
 
 async function init(){
 
@@ -206,10 +201,26 @@ return(
  className="h-full w-full object-cover"
 />
 
-<VideoOverlay
- video={video}
- toggleLike={toggleLike}
-/>
+<VideoOverlay video={video} />
+
+{/* LIKE BUTTON LAYER */}
+
+<div className="absolute right-6 bottom-32 flex flex-col items-center z-30">
+
+<button
+ onClick={()=>toggleLike(video)}
+ className="text-white text-4xl active:scale-150 transition"
+>
+❤️
+</button>
+
+<div className="text-white text-sm mt-1">
+{video.likes || 0}
+</div>
+
+</div>
+
+{/* USER + CAPTION */}
 
 <div className="absolute bottom-24 left-6 text-white z-20">
 
@@ -238,5 +249,4 @@ return(
 </div>
 
 )
-
 }
