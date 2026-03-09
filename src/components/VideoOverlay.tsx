@@ -89,12 +89,16 @@ export default function VideoOverlay() {
       {/* HEAR SOUND OVERLAY */}
 
       {muted && (
-        <button
-          onClick={toggleMute}
-          className="absolute inset-0 flex items-center justify-center text-white text-xl font-semibold pointer-events-auto"
-        >
-          Hear Sound
-        </button>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+
+          <button
+            onClick={toggleMute}
+            className="text-white text-xl font-semibold pointer-events-auto"
+          >
+            Hear Sound
+          </button>
+
+        </div>
       )}
 
 
