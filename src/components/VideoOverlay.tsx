@@ -1,134 +1,270 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { supabase } from "../lib/supabase"
+import Header from "@/components/Header"
+import VideoOverlay from "@/components/VideoOverlay"
 
-export default function VideoOverlay() {
-  const [playing, setPlaying] = useState(true)
-  const [muted, setMuted] = useState(true)
-  const [progress, setProgress] = useState(0)
+const PAGE_SIZE = 6
 
-  function getVideo(el: any) {
-    return el.closest(".video-container")?.querySelector("video") as HTMLVideoElement | null
+export default function Home() {
+
+  const [videos,setVideos] = useState<any[]>([])
+  const [profiles,setProfiles] = useState<Record<string,string>>({})
+  const [page,setPage] = useState(0)
+  const [loading,setLoading] = useState(false)
+  const [hasMore,setHasMore] = useState(true)
+
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(()=>{
+    fetchVideos(0,true)
+  },[])
+
+  useEffect(()=>{
+    setupInfiniteScroll()
+  },[videos])
+
+  async function fetchVideos(pageNumber:number,reset=false){
+
+    if(loading) return
+    setLoading(true)
+
+    const from = pageNumber * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+
+    const {data,error} = await supabase
+      .from("videos")
+      .select("*")
+      .order("created_at",{ascending:false})
+      .range(from,to)
+
+    if(error){
+      console.error(error)
+      setLoading(false)
+      return
+    }
+
+    if(!data){
+      setLoading(false)
+      return
+    }
+
+    const normalized = data.map(v=>({
+      ...v,
+      likes: typeof v.likes === "number" ? v.likes : 0
+    }))
+
+    const ids = normalized.map(v=>v.user_id).filter(Boolean)
+
+    if(ids.length){
+
+      const {data:profileRows} = await supabase
+        .from("profiles")
+        .select("id,display_name")
+        .in("id",ids)
+
+      if(profileRows){
+
+        const map:Record<string,string> = {}
+
+        profileRows.forEach((p:any)=>{
+          if(p.id && p.display_name){
+            map[p.id] = p.display_name
+          }
+        })
+
+        setProfiles(prev=>({...prev,...map}))
+      }
+    }
+
+    if(normalized.length < PAGE_SIZE) setHasMore(false)
+
+    if(reset){
+      setVideos(normalized)
+      setPage(1)
+    }else{
+      setVideos(prev=>[...prev,...normalized])
+      setPage(pageNumber+1)
+    }
+
+    setLoading(false)
   }
 
-  function togglePlay(e: any) {
-    e.stopPropagation()
+  async function toggleLike(video:any){
 
-    const v = getVideo(e.currentTarget)
-    if (!v) return
+    const {data:{user}} = await supabase.auth.getUser()
 
-    if (v.paused) {
-      v.play().catch(() => {})
-      setPlaying(true)
-    } else {
-      v.pause()
-      setPlaying(false)
+    if(!user){
+      alert("Login to like videos")
+      return
+    }
+
+    const {data:existing} = await supabase
+      .from("likes")
+      .select("id")
+      .eq("user_id",user.id)
+      .eq("video_id",video.id)
+      .maybeSingle()
+
+    if(existing){
+
+      await supabase
+        .from("likes")
+        .delete()
+        .eq("id",existing.id)
+
+      setVideos(prev =>
+        prev.map(v =>
+          v.id === video.id
+            ? {...v,likes:Math.max((v.likes||1)-1,0)}
+            : v
+        )
+      )
+
+    }else{
+
+      await supabase
+        .from("likes")
+        .insert({
+          user_id:user.id,
+          video_id:video.id
+        })
+
+      setVideos(prev =>
+        prev.map(v =>
+          v.id === video.id
+            ? {...v,likes:(v.likes||0)+1}
+            : v
+        )
+      )
     }
   }
 
-  function toggleVolume(e: any) {
-    e.stopPropagation()
+  function observeVideo(el:HTMLVideoElement | null){
 
-    const v = getVideo(e.currentTarget)
-    if (!v) return
+    if(!el) return
 
-    v.muted = !v.muted
-    setMuted(v.muted)
-  }
+    if(!observerRef.current){
 
-  function unmute(e: any) {
-    e.stopPropagation()
+      observerRef.current = new IntersectionObserver(entries=>{
 
-    const v = getVideo(e.currentTarget)
-    if (!v) return
+        entries.forEach(entry=>{
 
-    v.muted = false
-    v.volume = 1
-    v.play().catch(() => {})
-    setMuted(false)
-    setPlaying(true)
-  }
+          const video = entry.target as HTMLVideoElement
 
-  function updateProgress(e: any) {
-    const v = e.target as HTMLVideoElement
-    const percent = v.duration ? (v.currentTime / v.duration) * 100 : 0
-    setProgress(percent)
-  }
+          if(entry.isIntersecting){
 
-  function scrub(e: any) {
-    const timeline = e.currentTarget
-    const v = getVideo(timeline)
-    if (!v || !v.duration) return
+            document.querySelectorAll("video").forEach(v=>{
+              if(v !== video){
+                const vid = v as HTMLVideoElement
+                vid.pause()
+                vid.muted = true
+              }
+            })
 
-    const rect = timeline.getBoundingClientRect()
-    const clientX =
-      e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX
+            video.play().catch(()=>{})
 
-    const rawPercent = (clientX - rect.left) / rect.width
-    const percent = Math.max(0, Math.min(1, rawPercent))
+          }else{
 
-    v.currentTime = percent * v.duration
-  }
+            video.pause()
 
-  useEffect(() => {
-    const videos = document.querySelectorAll("video")
+          }
 
-    videos.forEach((v) => {
-      v.addEventListener("timeupdate", updateProgress)
-    })
+        })
 
-    return () => {
-      videos.forEach((v) => {
-        v.removeEventListener("timeupdate", updateProgress)
+      },{
+        threshold:0.6
       })
     }
-  }, [])
+
+    observerRef.current.observe(el)
+  }
+
+  function setupInfiniteScroll(){
+
+    const el = sentinelRef.current
+    if(!el) return
+
+    const io = new IntersectionObserver(entries=>{
+
+      if(entries[0].isIntersecting && hasMore && !loading){
+        fetchVideos(page)
+      }
+
+    })
+
+    io.observe(el)
+  }
 
   return (
-    <div className="absolute inset-0 flex flex-col justify-end z-10">
-      {muted && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
-          <button
-            onClick={unmute}
-            className="bg-black/70 text-white px-5 py-3 rounded-lg text-lg backdrop-blur"
-          >
-            🔊 Hear Sound
-          </button>
-        </div>
-      )}
 
-      <div className="p-4 space-y-2 pointer-events-auto">
-        <div
-          onMouseDown={scrub}
-          onTouchStart={scrub}
-          className="w-full h-1 bg-white/30 rounded cursor-pointer"
-        >
+    <div className="h-screen w-screen overflow-y-scroll snap-y snap-mandatory bg-black">
+
+      <Header/>
+
+      <main className="pt-16">
+
+        {videos.map((video,i)=>(
+
           <div
-            className="h-1 bg-white"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+            key={video.id}
+            className="video-container h-screen w-screen snap-start relative flex items-center justify-center bg-black"
+          >
 
-        <div className="flex items-center justify-between text-white">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={togglePlay}
-              className="text-white text-xl"
-            >
-              {playing ? "❚❚" : "▶"}
-            </button>
+            <video
+              ref={(el)=>observeVideo(el)}
+              src={video.video_url}
+              autoPlay
+              loop
+              defaultMuted
+              playsInline
+              preload={i < 3 ? "auto" : "metadata"}
+              className="h-full w-full object-cover"
+            />
 
-            <button
-              onClick={toggleVolume}
-              className="text-white text-xl"
-            >
-              {muted ? "🔇" : "🔊"}
-            </button>
+            <VideoOverlay/>
+
+            <div className="absolute right-6 bottom-32 flex flex-col items-center z-30">
+
+              <button
+                onClick={()=>toggleLike(video)}
+                className="text-white text-4xl active:scale-150 transition"
+              >
+                ❤️
+              </button>
+
+              <div className="text-white text-sm mt-1">
+                {video.likes || 0}
+              </div>
+
+            </div>
+
+            <div className="absolute bottom-24 left-6 text-white z-20">
+
+              <div className="font-bold">
+                @{video.user_id && profiles[video.user_id] ? profiles[video.user_id] : "anon"}
+              </div>
+
+              <div>{video.caption}</div>
+
+            </div>
+
           </div>
 
-          <div className="text-white text-xl opacity-70">↓</div>
+        ))}
+
+        <div
+          ref={sentinelRef}
+          className="h-20 flex items-center justify-center text-white"
+        >
+          {loading && "Loading more..."}
         </div>
-      </div>
+
+      </main>
+
     </div>
+
   )
 }
