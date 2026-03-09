@@ -65,27 +65,42 @@ export default function Home() {
 
   async function likeVideo(videoId:string){
 
-    // Optimistic UI update
+    const { data:{ user } } = await supabase.auth.getUser()
+
+    if(!user){
+      alert("Login to like videos")
+      return
+    }
+
+    const video = videos.find(v => v.id === videoId)
+    if(!video) return
+
+    const { error } = await supabase
+      .from("likes")
+      .insert({
+        user_id:user.id,
+        video_id:videoId
+      })
+
+    if(error){
+      return // already liked
+    }
+
+    const newLikes = (video.likes || 0) + 1
+
+    // update UI instantly
     setVideos(prev =>
       prev.map(v =>
         v.id === videoId
-          ? { ...v, likes: (v.likes || 0) + 1 }
+          ? { ...v, likes:newLikes }
           : v
       )
     )
 
-    const video = videos.find(v => v.id === videoId)
-
-    const { error } = await supabase
+    await supabase
       .from("videos")
-      .update({
-        likes: (video?.likes || 0) + 1
-      })
+      .update({ likes:newLikes })
       .eq("id",videoId)
-
-    if(error){
-      console.error(error)
-    }
 
   }
 
@@ -173,7 +188,7 @@ export default function Home() {
 
             <VideoOverlay/>
 
-            {/* HEART + COUNTER */}
+            {/* HEART */}
 
             <div className="absolute right-6 bottom-32 flex flex-col items-center z-50">
 
@@ -190,7 +205,7 @@ export default function Home() {
 
             </div>
 
-            {/* CREATOR + CAPTION */}
+            {/* CREATOR */}
 
             <div className="absolute bottom-24 left-6 text-white z-20">
 
