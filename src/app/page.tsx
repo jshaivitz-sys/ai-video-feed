@@ -219,7 +219,7 @@ export default function Home() {
           {/* Name + caption */}
           <div className="absolute bottom-24 left-6 text-white z-20">
             <div className="font-bold">
-              @{profiles[video.user_id] ?? "anon"}
+            @{profiles[video.user_id] ?? `user-${video.user_id.slice(0,4)}`}
             </div>
 
             <div>{video.caption}</div>
