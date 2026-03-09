@@ -2,108 +2,75 @@
 
 import { useState } from "react"
 import { supabase } from "../../lib/supabase"
-import AuthCard from "@/components/AuthCard"
 
-export default function UploadPage() {
+export default function UploadPage(){
 
-  const [file, setFile] = useState<File | null>(null)
-  const [caption, setCaption] = useState("")
-  const [uploading, setUploading] = useState(false)
+  const [file,setFile] = useState<File | null>(null)
+  const [caption,setCaption] = useState("")
 
-  async function uploadVideo() {
+  async function uploadVideo(){
 
-    if (!file) {
-      alert("Please select a video file")
-      return
-    }
-
-    if (!file.type.startsWith("video/")) {
-      alert("Only video files allowed")
-      return
-    }
-
-    if (file.size > 50 * 1024 * 1024) {
-      alert("Video must be under 50MB")
-      return
-    }
-
-    setUploading(true)
-
-    const { data } = await supabase.auth.getUser()
-
-    if (!data.user) {
-      alert("You must be logged in")
-      setUploading(false)
-      return
-    }
+    if(!file) return
 
     const fileName = `${Date.now()}-${file.name}`
 
     const { error } = await supabase.storage
       .from("videos")
-      .upload(fileName, file)
+      .upload(fileName,file)
 
-    if (error) {
-      console.error(error)
+    if(error){
       alert("Upload failed")
-      setUploading(false)
       return
     }
 
-    const { data: publicUrlData } = supabase.storage
+    const {data:publicUrlData} = supabase.storage
       .from("videos")
       .getPublicUrl(fileName)
 
     const publicUrl = publicUrlData.publicUrl
 
+    const {data:{user}} = await supabase.auth.getUser()
+
     await supabase
       .from("videos")
       .insert({
-        video_url: publicUrl,
+        video_url:publicUrl,
         caption,
-        user_id: data.user.id
+        user_id:user?.id
       })
 
-    alert("Video uploaded!")
-
-    setFile(null)
-    setCaption("")
-    setUploading(false)
+    alert("Uploaded!")
 
   }
 
   return (
 
-    <AuthCard title="Upload Video">
+    <div className="min-h-screen flex items-center justify-center bg-black text-white">
 
-      <div className="space-y-4">
+      <div className="space-y-4 w-80">
 
         <input
           type="file"
-          accept="video/*"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
+          onChange={(e)=>setFile(e.target.files?.[0] || null)}
         />
 
         <textarea
           placeholder="Caption"
           value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
+          onChange={(e)=>setCaption(e.target.value)}
+          className="w-full p-3 bg-zinc-900"
         />
 
         <button
           onClick={uploadVideo}
-          disabled={uploading}
-          className="w-full bg-green-400 text-black font-semibold py-3 rounded hover:bg-green-300 transition"
+          className="w-full bg-green-400 text-black p-3"
         >
-          {uploading ? "Uploading..." : "Upload Video"}
+          Upload
         </button>
 
       </div>
 
-    </AuthCard>
+    </div>
 
   )
-
 }

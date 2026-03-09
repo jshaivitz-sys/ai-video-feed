@@ -2,72 +2,78 @@
 
 import { useState } from "react"
 import { supabase } from "../../lib/supabase"
-import AuthCard from "@/components/AuthCard"
 
 export default function LoginPage(){
 
- const [email,setEmail] = useState("")
- const [displayName,setDisplayName] = useState("")
- const [loading,setLoading] = useState(false)
+  const [email,setEmail] = useState("")
+  const [displayName,setDisplayName] = useState("")
 
- async function login(){
+  async function login(){
 
-  if(!email) return alert("Enter email")
-  if(!displayName) return alert("Enter display name")
+    const { error } = await supabase.auth.signInWithOtp({
+      email
+    })
 
-  setLoading(true)
+    if(error){
+      alert(error.message)
+    }else{
+      alert("Check your email for login link")
+    }
 
-  localStorage.setItem("display_name",displayName)
-
-  const { error } = await supabase.auth.signInWithOtp({
-   email
-  })
-
-  if(error){
-   console.error(error)
-   alert("Login failed")
-  } else {
-   alert("Check your email for the login link")
   }
 
-  setLoading(false)
+  async function saveProfile(){
 
- }
+    const {data:{user}} = await supabase.auth.getUser()
 
- return(
+    if(!user) return
 
- <AuthCard title="Login">
+    await supabase
+      .from("profiles")
+      .upsert({
+        id:user.id,
+        display_name:displayName
+      })
 
-  <div className="space-y-4">
+  }
 
-   <input
-    type="text"
-    placeholder="Display Name"
-    value={displayName}
-    onChange={(e)=>setDisplayName(e.target.value)}
-    className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
-   />
+  return (
 
-   <input
-    type="email"
-    placeholder="Email"
-    value={email}
-    onChange={(e)=>setEmail(e.target.value)}
-    className="w-full bg-black border border-zinc-700 rounded px-4 py-3 text-white"
-   />
+    <div className="min-h-screen flex items-center justify-center bg-black text-white">
 
-   <button
-    onClick={login}
-    disabled={loading}
-    className="w-full bg-green-400 text-black font-semibold py-3 rounded hover:bg-green-300 transition"
-   >
-    {loading ? "Sending link..." : "Login"}
-   </button>
+      <div className="space-y-4 w-80">
 
-  </div>
+        <input
+          placeholder="Display name"
+          value={displayName}
+          onChange={(e)=>setDisplayName(e.target.value)}
+          className="w-full p-3 bg-zinc-900"
+        />
 
- </AuthCard>
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={(e)=>setEmail(e.target.value)}
+          className="w-full p-3 bg-zinc-900"
+        />
 
- )
+        <button
+          onClick={login}
+          className="w-full bg-green-400 text-black p-3"
+        >
+          Login
+        </button>
 
+        <button
+          onClick={saveProfile}
+          className="w-full bg-white text-black p-3"
+        >
+          Save Display Name
+        </button>
+
+      </div>
+
+    </div>
+
+  )
 }

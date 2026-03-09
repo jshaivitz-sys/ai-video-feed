@@ -10,7 +10,6 @@ const PAGE_SIZE = 6
 export default function Home() {
 
   const [videos,setVideos] = useState<any[]>([])
-  const [profiles,setProfiles] = useState<Record<string,string>>({})
   const [page,setPage] = useState(0)
   const [loading,setLoading] = useState(false)
   const [hasMore,setHasMore] = useState(true)
@@ -36,7 +35,10 @@ export default function Home() {
 
     const {data,error} = await supabase
       .from("videos")
-      .select("*")
+      .select(`
+        *,
+        profiles(display_name)
+      `)
       .order("created_at",{ascending:false})
       .range(from,to)
 
@@ -51,41 +53,13 @@ export default function Home() {
       return
     }
 
-    const normalized = data.map(v=>({
-      ...v,
-      likes: typeof v.likes === "number" ? v.likes : 0
-    }))
-
-    const ids = normalized.map(v=>v.user_id).filter(Boolean)
-
-    if(ids.length){
-
-      const {data:profileRows} = await supabase
-        .from("profiles")
-        .select("id,display_name")
-        .in("id",ids)
-
-      if(profileRows){
-
-        const map:Record<string,string> = {}
-
-        profileRows.forEach((p:any)=>{
-          if(p.id && p.display_name){
-            map[p.id] = p.display_name
-          }
-        })
-
-        setProfiles(prev=>({...prev,...map}))
-      }
-    }
-
-    if(normalized.length < PAGE_SIZE) setHasMore(false)
+    if(data.length < PAGE_SIZE) setHasMore(false)
 
     if(reset){
-      setVideos(normalized)
+      setVideos(data)
       setPage(1)
     }else{
-      setVideos(prev=>[...prev,...normalized])
+      setVideos(prev=>[...prev,...data])
       setPage(pageNumber+1)
     }
 
@@ -101,45 +75,13 @@ export default function Home() {
       return
     }
 
-    const {data:existing} = await supabase
+    await supabase
       .from("likes")
-      .select("id")
-      .eq("user_id",user.id)
-      .eq("video_id",video.id)
-      .maybeSingle()
+      .insert({
+        user_id:user.id,
+        video_id:video.id
+      })
 
-    if(existing){
-
-      await supabase
-        .from("likes")
-        .delete()
-        .eq("id",existing.id)
-
-      setVideos(prev =>
-        prev.map(v =>
-          v.id === video.id
-            ? {...v,likes:Math.max((v.likes||1)-1,0)}
-            : v
-        )
-      )
-
-    }else{
-
-      await supabase
-        .from("likes")
-        .insert({
-          user_id:user.id,
-          video_id:video.id
-        })
-
-      setVideos(prev =>
-        prev.map(v =>
-          v.id === video.id
-            ? {...v,likes:(v.likes||0)+1}
-            : v
-        )
-      )
-    }
   }
 
   function observeVideo(el:HTMLVideoElement | null){
@@ -230,21 +172,17 @@ export default function Home() {
 
               <button
                 onClick={()=>toggleLike(video)}
-                className="text-white text-4xl active:scale-150 transition"
+                className="text-white text-4xl"
               >
                 ❤️
               </button>
-
-              <div className="text-white text-sm mt-1">
-                {video.likes || 0}
-              </div>
 
             </div>
 
             <div className="absolute bottom-24 left-6 text-white z-20">
 
               <div className="font-bold">
-                @{video.user_id && profiles[video.user_id] ? profiles[video.user_id] : "anon"}
+                @{video.profiles?.display_name || "anon"}
               </div>
 
               <div>{video.caption}</div>
