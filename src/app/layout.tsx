@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,28 +13,37 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Botflixer – Infinite AI Video Feed",
-  description: "Watch an endless feed of AI-generated videos from across the internet.",
-  metadataBase: new URL("https://botflixer.com"),
+  title: "Botflixer — Scroll Infinite AI Videos",
+  description: "Scroll infinite AI videos in a TikTok-style feed.",
+
   openGraph: {
-    title: "Botflixer – Infinite AI Video Feed",
-    description: "Discover AI videos from across the web in one endless stream.",
+    title: "Botflixer — Scroll Infinite AI Videos",
+    description: "Scroll infinite AI videos in a TikTok-style feed.",
     url: "https://botflixer.com",
     siteName: "Botflixer",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
     type: "website",
   },
+
   twitter: {
     card: "summary_large_image",
-    title: "Botflixer – Infinite AI Video Feed",
-    description: "Discover AI videos from across the web in one endless stream.",
+    title: "Botflixer — Scroll Infinite AI Videos",
+    description: "Scroll infinite AI videos.",
+    images: ["/og-image.png"],
   },
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
       <body
