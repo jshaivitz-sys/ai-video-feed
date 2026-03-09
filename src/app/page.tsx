@@ -10,6 +10,7 @@ const PAGE_SIZE = 6
 export default function Home() {
 
   const [videos,setVideos] = useState<any[]>([])
+  const [profiles,setProfiles] = useState<Record<string,string>>({})
   const [page,setPage] = useState(0)
   const [loading,setLoading] = useState(false)
   const [hasMore,setHasMore] = useState(true)
@@ -35,10 +36,7 @@ export default function Home() {
 
     const {data,error} = await supabase
       .from("videos")
-      .select(`
-        *,
-        profiles(display_name)
-      `)
+      .select("*")
       .order("created_at",{ascending:false})
       .range(from,to)
 
@@ -53,6 +51,29 @@ export default function Home() {
       return
     }
 
+    // get display names separately
+    const userIds = data.map(v => v.user_id).filter(Boolean)
+
+    if(userIds.length){
+
+      const {data:profileRows} = await supabase
+        .from("profiles")
+        .select("id,display_name")
+        .in("id",userIds)
+
+      if(profileRows){
+
+        const map:Record<string,string> = {}
+
+        profileRows.forEach((p:any)=>{
+          map[p.id] = p.display_name
+        })
+
+        setProfiles(prev=>({...prev,...map}))
+      }
+
+    }
+
     if(data.length < PAGE_SIZE) setHasMore(false)
 
     if(reset){
@@ -64,24 +85,6 @@ export default function Home() {
     }
 
     setLoading(false)
-  }
-
-  async function toggleLike(video:any){
-
-    const {data:{user}} = await supabase.auth.getUser()
-
-    if(!user){
-      alert("Login to like videos")
-      return
-    }
-
-    await supabase
-      .from("likes")
-      .insert({
-        user_id:user.id,
-        video_id:video.id
-      })
-
   }
 
   function observeVideo(el:HTMLVideoElement | null){
@@ -168,21 +171,10 @@ export default function Home() {
 
             <VideoOverlay/>
 
-            <div className="absolute right-6 bottom-32 flex flex-col items-center z-30">
-
-              <button
-                onClick={()=>toggleLike(video)}
-                className="text-white text-4xl"
-              >
-                ❤️
-              </button>
-
-            </div>
-
             <div className="absolute bottom-24 left-6 text-white z-20">
 
               <div className="font-bold">
-                @{video.profiles?.display_name || "anon"}
+                @{profiles[video.user_id] || "anon"}
               </div>
 
               <div>{video.caption}</div>
