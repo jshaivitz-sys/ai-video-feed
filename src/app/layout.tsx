@@ -13,19 +13,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Botflixer — Scroll Infinite AI Videos",
-  description: "Scroll infinite AI videos in a TikTok-style feed.",
+  title: "Botflixer — Scroll Infinite AI Videos in a TikTok-Style Feed",
+  description:
+    "Botflixer is an infinite AI video feed. Scroll endlessly through AI-generated videos, music clips, weird experiments, and creative AI content.",
 
   openGraph: {
     title: "Botflixer — Scroll Infinite AI Videos",
-    description: "Scroll infinite AI videos in a TikTok-style feed.",
+    description:
+      "An endless TikTok-style feed for AI videos. Discover infinite AI content instantly.",
     url: "https://botflixer.com",
     siteName: "Botflixer",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://botflixer.com/og-image.png",
         width: 1200,
         height: 630,
+        alt: "Botflixer infinite AI video feed",
       },
     ],
     type: "website",
@@ -34,21 +37,20 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Botflixer — Scroll Infinite AI Videos",
-    description: "Scroll infinite AI videos.",
-    images: ["/og-image.png"],
+    description:
+      "Endless AI video feed. Discover infinite AI generated videos instantly.",
+    images: ["https://botflixer.com/og-image.png"],
   },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>
     </html>
