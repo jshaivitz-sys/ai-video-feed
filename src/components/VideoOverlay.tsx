@@ -9,136 +9,190 @@ export default function VideoOverlay({
   video: any
   toggleLike: (video: any) => void
 }) {
-  const [playing, setPlaying] = useState(true)
-  const [muted, setMuted] = useState(true)
-  const [progress, setProgress] = useState(0)
 
-  function getVideo(el: any) {
+  const [playing,setPlaying] = useState(true)
+  const [muted,setMuted] = useState(true)
+  const [progress,setProgress] = useState(0)
+
+  function getVideo(el:any){
     return el.closest(".video-container")?.querySelector("video")
   }
 
-  function togglePlay(e: any) {
+  function togglePlay(e:any){
+
     e.stopPropagation()
 
     const v = getVideo(e.currentTarget)
-    if (!v) return
+    if(!v) return
 
-    if (v.paused) {
+    if(v.paused){
       v.play()
       setPlaying(true)
     } else {
       v.pause()
       setPlaying(false)
     }
+
   }
 
-  function toggleVolume(e: any) {
+  function toggleVolume(e:any){
+
     e.stopPropagation()
 
     const v = getVideo(e.currentTarget)
-    if (!v) return
+    if(!v) return
 
     v.muted = !v.muted
     setMuted(v.muted)
+
   }
 
-  function unmute(e: any) {
+  function unmute(e:any){
+
     e.stopPropagation()
 
     const v = getVideo(e.currentTarget)
-    if (!v) return
+    if(!v) return
 
     v.muted = false
     v.volume = 1
     setMuted(false)
+
   }
 
-  function updateProgress(e: any) {
+  function updateProgress(e:any){
+
     const v = e.target as HTMLVideoElement
-    const percent = v.duration ? (v.currentTime / v.duration) * 100 : 0
+
+    const percent = v.duration
+      ? (v.currentTime / v.duration) * 100
+      : 0
+
     setProgress(percent)
+
   }
 
-  function scrub(e: any) {
+  function scrub(e:any){
+
     const timeline = e.currentTarget
     const v = getVideo(timeline)
-    if (!v || !v.duration) return
+
+    if(!v || !v.duration) return
 
     const rect = timeline.getBoundingClientRect()
+
     const clientX =
-      e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX
+      e.touches && e.touches.length > 0
+        ? e.touches[0].clientX
+        : e.clientX
 
     const rawPercent = (clientX - rect.left) / rect.width
-    const percent = Math.max(0, Math.min(1, rawPercent))
+    const percent = Math.max(0,Math.min(1,rawPercent))
 
     v.currentTime = percent * v.duration
+
   }
 
-  useEffect(() => {
+  useEffect(()=>{
+
     const videos = document.querySelectorAll("video")
 
-    videos.forEach((v) => {
-      v.addEventListener("timeupdate", updateProgress)
+    videos.forEach(v=>{
+      v.addEventListener("timeupdate",updateProgress)
     })
 
-    return () => {
-      videos.forEach((v) => {
-        v.removeEventListener("timeupdate", updateProgress)
+    return ()=>{
+      videos.forEach(v=>{
+        v.removeEventListener("timeupdate",updateProgress)
       })
     }
-  }, [])
 
-  return (
-    <div className="absolute inset-0 flex flex-col justify-end z-10 pointer-events-none">
+  },[])
+
+  return(
+
+    <div className="absolute inset-0 flex flex-col justify-end z-10">
+
       {muted && (
+
         <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
+
           <button
             onClick={unmute}
             className="bg-black/70 text-white px-5 py-3 rounded-lg text-lg backdrop-blur"
           >
             🔊 Hear Sound
           </button>
+
         </div>
+
       )}
 
       <div className="p-4 space-y-2 pointer-events-auto">
+
+        {/* timeline */}
+
         <div
           onMouseDown={scrub}
           onTouchStart={scrub}
           className="w-full h-1 bg-white/30 rounded cursor-pointer"
         >
+
           <div
             className="h-1 bg-white"
             style={{ width: `${progress}%` }}
           />
+
         </div>
 
         <div className="flex items-center justify-between text-white">
+
+          {/* play + volume */}
+
           <div className="flex items-center gap-4">
-            <button onClick={togglePlay} className="text-white text-xl">
+
+            <button
+              onClick={togglePlay}
+              className="text-white text-xl"
+            >
               {playing ? "❚❚" : "▶"}
             </button>
 
-            <button onClick={toggleVolume} className="text-white text-xl">
+            <button
+              onClick={toggleVolume}
+              className="text-white text-xl"
+            >
               {muted ? "🔇" : "🔊"}
             </button>
+
           </div>
 
+          {/* like + swipe */}
+
           <div className="flex items-center gap-6">
+
             <button
-              onClick={(e) => {
+              onClick={(e)=>{
                 e.stopPropagation()
                 toggleLike(video)
               }}
-              className="text-white text-xl"
+              className="text-white text-xl active:scale-150 transition"
             >
               ❤️
             </button>
 
-            <div className="text-white text-xl opacity-70">↓</div>
+            <div className="text-white text-xl opacity-70">
+              ↓
+            </div>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
+
   )
+
 }
