@@ -99,6 +99,10 @@ export default function UploadPage(){
           {uploading ? "Uploading..." : "Upload"}
         </button>
 
+        <p className="text-xs text-zinc-400 text-center">
+          If we love your robot content, we may reach out about developing your robot IP for Botflix Live.
+        </p>
+
       </div>
 
     </div>
