@@ -2,142 +2,102 @@
 
 import { useEffect, useState } from "react"
 
-export default function VideoOverlay() {
+export default function VideoOverlay({ videoRef }: any) {
 
-  const [muted,setMuted] = useState(true)
-  const [paused,setPaused] = useState(false)
-  const [progress,setProgress] = useState(0)
+  const [playing, setPlaying] = useState(true)
+  const [muted, setMuted] = useState(true)
+  const [progress, setProgress] = useState(0)
 
-  function getVideo(el: HTMLElement): HTMLVideoElement | null {
+  function togglePlay() {
+    const video = videoRef.current
+    if (!video) return
 
-    const container = el.closest(".video-container")
-    if(!container) return null
-
-    return container.querySelector("video")
-
+    if (video.paused) {
+      video.play()
+      setPlaying(true)
+    } else {
+      video.pause()
+      setPlaying(false)
+    }
   }
 
-  function hearSound(e: React.MouseEvent<HTMLButtonElement>) {
+  function toggleMute() {
+    const video = videoRef.current
+    if (!video) return
 
-    e.stopPropagation()
-
-    const v = getVideo(e.currentTarget)
-    if(!v) return
-
-    v.muted = false
-    v.volume = 1
-    v.play().catch(()=>{})
-
-    setMuted(false)
-
+    video.muted = !video.muted
+    setMuted(video.muted)
   }
 
-  function togglePlay(e: React.MouseEvent<HTMLButtonElement>) {
+  useEffect(() => {
 
-    e.stopPropagation()
+    const video = videoRef.current
+    if (!video) return
 
-    const v = getVideo(e.currentTarget)
-    if(!v) return
+    video.muted = true
+    video.play()
 
-    if(v.paused){
-      v.play().catch(()=>{})
-      setPaused(false)
-    }else{
-      v.pause()
-      setPaused(true)
+    const updateProgress = () => {
+      if (!video.duration) return
+      setProgress((video.currentTime / video.duration) * 100)
     }
 
-  }
+    video.addEventListener("timeupdate", updateProgress)
 
-  function toggleMute(e: React.MouseEvent<HTMLButtonElement>) {
+    return () => {
+      video.removeEventListener("timeupdate", updateProgress)
+    }
 
-    e.stopPropagation()
-
-    const v = getVideo(e.currentTarget)
-    if(!v) return
-
-    v.muted = !v.muted
-    setMuted(v.muted)
-
-  }
-
-  useEffect(()=>{
-
-    const videos = document.querySelectorAll("video")
-
-    videos.forEach(video=>{
-
-      const update = () => {
-
-        if(!video.duration) return
-
-        const percent = (video.currentTime / video.duration) * 100
-        setProgress(percent)
-
-      }
-
-      video.addEventListener("timeupdate",update)
-
-    })
-
-  },[])
+  }, [videoRef])
 
   return (
+    <>
 
-    <div className="absolute inset-0 flex flex-col justify-end z-20 pointer-events-none">
+      {/* Play / Pause Button */}
 
-      {muted && (
+      <button
+        onClick={togglePlay}
+        className="absolute top-6 left-6 text-white text-3xl z-20"
+      >
+        {playing ? "❚❚" : "▶"}
+      </button>
 
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
 
-          <button
-            onClick={hearSound}
-            className="bg-black/70 text-white px-6 py-3 rounded-lg text-lg backdrop-blur"
-          >
-            🔊 Hear Sound
-          </button>
+      {/* Mute Button */}
 
-        </div>
-
+      {!muted && (
+        <button
+          onClick={toggleMute}
+          className="absolute top-6 right-6 text-white text-2xl z-20"
+        >
+          🔊
+        </button>
       )}
 
-      <div className="p-4 space-y-3 pointer-events-auto">
 
-        {/* Moving Timeline */}
+      {/* Hear Sound Overlay */}
 
-        <div className="w-full h-1 bg-white/30 rounded overflow-hidden">
+      {muted && (
+        <button
+          onClick={toggleMute}
+          className="absolute inset-0 flex items-center justify-center text-white text-xl font-semibold z-10"
+        >
+          Hear Sound
+        </button>
+      )}
 
-          <div
-            className="h-1 bg-white transition-all duration-100"
-            style={{ width:`${progress}%` }}
-          />
 
-        </div>
+      {/* Timeline */}
 
-        {/* Controls */}
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20">
 
-        <div className="flex items-center gap-4 text-white">
-
-          <button
-            onClick={togglePlay}
-            className="text-white text-2xl"
-          >
-            {paused ? "▶" : "❚❚"}
-          </button>
-
-          <button
-            onClick={toggleMute}
-            className="text-xl"
-          >
-            {muted ? "🔇" : "🔊"}
-          </button>
-
-        </div>
+        <div
+          className="h-full bg-white"
+          style={{ width: `${progress}%` }}
+        />
 
       </div>
 
-    </div>
-
+    </>
   )
-
 }
