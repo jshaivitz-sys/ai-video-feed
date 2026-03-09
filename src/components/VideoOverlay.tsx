@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 export default function VideoOverlay() {
 
@@ -61,19 +61,30 @@ export default function VideoOverlay() {
 
   }
 
-  function updateProgress(video: HTMLVideoElement){
+  useEffect(()=>{
 
-    if(!video.duration) return
+    const videos = document.querySelectorAll("video")
 
-    setProgress((video.currentTime / video.duration) * 100)
+    videos.forEach(video=>{
 
-  }
+      const update = () => {
+
+        if(!video.duration) return
+
+        const percent = (video.currentTime / video.duration) * 100
+        setProgress(percent)
+
+      }
+
+      video.addEventListener("timeupdate",update)
+
+    })
+
+  },[])
 
   return (
 
     <div className="absolute inset-0 flex flex-col justify-end z-20 pointer-events-none">
-
-      {/* HEAR SOUND */}
 
       {muted && (
 
@@ -90,46 +101,36 @@ export default function VideoOverlay() {
 
       )}
 
-      {/* CONTROLS */}
-
       <div className="p-4 space-y-3 pointer-events-auto">
 
-        {/* TIMELINE */}
+        {/* Moving Timeline */}
 
-        <div className="w-full h-1 bg-white/30 rounded">
+        <div className="w-full h-1 bg-white/30 rounded overflow-hidden">
 
           <div
-            className="h-1 bg-white"
+            className="h-1 bg-white transition-all duration-100"
             style={{ width:`${progress}%` }}
           />
 
         </div>
 
-        {/* BUTTON ROW */}
+        {/* Controls */}
 
-        <div className="flex items-center justify-between text-white">
+        <div className="flex items-center gap-4 text-white">
 
-          <div className="flex gap-4">
+          <button
+            onClick={togglePlay}
+            className="text-white text-2xl"
+          >
+            {paused ? "▶" : "❚❚"}
+          </button>
 
-            <button
-              onClick={togglePlay}
-              className="text-xl"
-            >
-              {paused ? "▶" : "❚❚"}
-            </button>
-
-            <button
-              onClick={toggleMute}
-              className="text-xl"
-            >
-              {muted ? "🔇" : "🔊"}
-            </button>
-
-          </div>
-
-          <div className="opacity-70 text-xl">
-            ↓
-          </div>
+          <button
+            onClick={toggleMute}
+            className="text-xl"
+          >
+            {muted ? "🔇" : "🔊"}
+          </button>
 
         </div>
 
@@ -138,4 +139,5 @@ export default function VideoOverlay() {
     </div>
 
   )
+
 }
