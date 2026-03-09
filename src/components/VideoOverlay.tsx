@@ -2,14 +2,20 @@
 
 import { useEffect, useState } from "react"
 
-export default function VideoOverlay({ videoRef }: any) {
+export default function VideoOverlay() {
+
   const [playing, setPlaying] = useState(true)
   const [muted, setMuted] = useState(true)
   const [progress, setProgress] = useState(0)
 
-  const video = videoRef?.current
+  function getVideo(el: HTMLElement): HTMLVideoElement | null {
+    const container = el.closest(".video-container")
+    if (!container) return null
+    return container.querySelector("video")
+  }
 
-  function togglePlay() {
+  function togglePlay(e: any) {
+    const video = getVideo(e.currentTarget)
     if (!video) return
 
     if (video.paused) {
@@ -21,7 +27,8 @@ export default function VideoOverlay({ videoRef }: any) {
     }
   }
 
-  function toggleMute() {
+  function toggleMute(e: any) {
+    const video = getVideo(e.currentTarget)
     if (!video) return
 
     video.muted = !video.muted
@@ -29,26 +36,29 @@ export default function VideoOverlay({ videoRef }: any) {
   }
 
   useEffect(() => {
-    if (!video) return
 
-    video.muted = true
+    const videos = document.querySelectorAll("video")
 
-    const updateProgress = () => {
-      if (!video.duration) return
-      setProgress((video.currentTime / video.duration) * 100)
-    }
+    videos.forEach(video => {
 
-    video.addEventListener("timeupdate", updateProgress)
+      const update = () => {
+        if (!video.duration) return
+        const pct = (video.currentTime / video.duration) * 100
+        setProgress(pct)
+      }
 
-    return () => {
-      video.removeEventListener("timeupdate", updateProgress)
-    }
-  }, [video])
+      video.addEventListener("timeupdate", update)
+
+    })
+
+  }, [])
 
   return (
+
     <div className="absolute inset-0 pointer-events-none">
 
-      {/* PLAY / PAUSE */}
+      {/* Play / Pause */}
+
       <button
         onClick={togglePlay}
         className="absolute top-6 left-6 text-white text-3xl pointer-events-auto"
@@ -56,7 +66,8 @@ export default function VideoOverlay({ videoRef }: any) {
         {playing ? "❚❚" : "▶"}
       </button>
 
-      {/* MUTE / UNMUTE */}
+      {/* Mute / Unmute */}
+
       <button
         onClick={toggleMute}
         className="absolute top-6 right-6 text-white text-2xl pointer-events-auto"
@@ -64,7 +75,8 @@ export default function VideoOverlay({ videoRef }: any) {
         {muted ? "🔇" : "🔊"}
       </button>
 
-      {/* HEAR SOUND BUTTON */}
+      {/* Hear Sound Overlay */}
+
       {muted && (
         <button
           onClick={toggleMute}
@@ -74,14 +86,16 @@ export default function VideoOverlay({ videoRef }: any) {
         </button>
       )}
 
-      {/* TIMELINE */}
+      {/* Timeline */}
+
       <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20">
         <div
-          className="h-full bg-white"
+          className="h-full bg-white transition-all"
           style={{ width: `${progress}%` }}
         />
       </div>
 
     </div>
+
   )
 }
