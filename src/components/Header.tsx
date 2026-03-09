@@ -23,7 +23,7 @@ export default function Header() {
       <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
 
         {/* Brand */}
-        <div className="flex items-center gap-2 text-green-400 font-bold tracking-wider">
+        <div className="flex items-center gap-2 text-[#9EFF00] font-bold tracking-wider drop-shadow-[0_0_6px_#9EFF00]">
           BOTFLIXER
         </div>
 
@@ -51,7 +51,7 @@ export default function Header() {
           {user ? (
             <Link
               href="/upload"
-              className="bg-green-400 text-black px-3 py-1.5 rounded font-semibold hover:bg-green-300 transition"
+              className="bg-[#9EFF00] text-black px-3 py-1.5 rounded font-semibold hover:bg-[#8BFF00] transition"
             >
               Upload
             </Link>

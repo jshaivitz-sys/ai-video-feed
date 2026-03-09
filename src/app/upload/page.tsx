@@ -94,7 +94,7 @@ export default function UploadPage(){
         <button
           onClick={uploadVideo}
           disabled={uploading}
-          className="w-full bg-green-400 text-black p-3 rounded"
+          className="w-full bg-[#9EFF00] hover:bg-[#8BFF00] text-black p-3 rounded"
         >
           {uploading ? "Uploading..." : "Upload"}
         </button>
