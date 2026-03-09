@@ -53,18 +53,21 @@ export default function Home() {
 
     const userIds = data.map(v => v.user_id).filter(Boolean)
 
-    const { data: profileRows } = await supabase
-      .from("profiles")
-      .select("id, display_name")
-      .in("id", userIds)
+    if (userIds.length > 0) {
 
-    const profileMap: any = {}
+      const { data: profileRows } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", userIds)
 
-    profileRows?.forEach(p => {
-      profileMap[p.id] = p.display_name
-    })
+      const profileMap: any = {}
 
-    setProfiles(prev => ({ ...prev, ...profileMap }))
+      profileRows?.forEach(p => {
+        profileMap[p.id] = p.display_name
+      })
+
+      setProfiles(prev => ({ ...prev, ...profileMap }))
+    }
 
     if (data.length < PAGE_SIZE) setHasMore(false)
 
@@ -116,7 +119,7 @@ export default function Home() {
       setVideos(prev =>
         prev.map(v =>
           v.id === video.id
-            ? { ...v, likes: v.likes + 1 }
+            ? { ...v, likes: (v.likes || 0) + 1 }
             : v
         )
       )
@@ -193,7 +196,7 @@ export default function Home() {
             <div className="absolute bottom-24 left-6 text-white z-20">
 
               <div className="font-bold">
-                @{profiles[video.user_id] || "anon"}
+                @{video.user_id && profiles[video.user_id] ? profiles[video.user_id] : "anon"}
               </div>
 
               <div>{video.caption}</div>
@@ -223,6 +226,5 @@ export default function Home() {
       </main>
 
     </div>
-
   )
 }
