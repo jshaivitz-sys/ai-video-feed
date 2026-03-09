@@ -36,15 +36,15 @@ export default function VideoOverlay({ videoRef }: any) {
 
     video.muted = true
 
-    const update = () => {
+    const updateProgress = () => {
       if (!video.duration) return
       setProgress((video.currentTime / video.duration) * 100)
     }
 
-    video.addEventListener("timeupdate", update)
+    video.addEventListener("timeupdate", updateProgress)
 
     return () => {
-      video.removeEventListener("timeupdate", update)
+      video.removeEventListener("timeupdate", updateProgress)
     }
 
   }, [videoRef])
@@ -53,25 +53,25 @@ export default function VideoOverlay({ videoRef }: any) {
 
     <div className="absolute inset-0 z-20 pointer-events-none">
 
-      {/* PLAY / PAUSE */}
+      {/* PLAY / PAUSE CONTROL */}
 
       <button
         onClick={togglePlay}
-        className="absolute top-6 left-6 text-white text-3xl pointer-events-auto"
+        className="absolute bottom-6 left-6 text-white text-3xl pointer-events-auto"
       >
         {playing ? "❚❚" : "▶"}
       </button>
 
-      {/* MUTE */}
+      {/* MUTE / UNMUTE CONTROL */}
 
       <button
         onClick={toggleMute}
-        className="absolute top-6 right-6 text-white text-2xl pointer-events-auto"
+        className="absolute bottom-6 left-16 text-white text-2xl pointer-events-auto"
       >
         {muted ? "🔇" : "🔊"}
       </button>
 
-      {/* HEAR SOUND */}
+      {/* HEAR SOUND OVERLAY */}
 
       {muted && (
         <button
@@ -87,7 +87,7 @@ export default function VideoOverlay({ videoRef }: any) {
       <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20 pointer-events-none">
 
         <div
-          className="h-full bg-white"
+          className="h-full bg-white transition-all"
           style={{ width: `${progress}%` }}
         />
 
