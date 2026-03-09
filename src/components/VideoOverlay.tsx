@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react"
 
 export default function VideoOverlay({ videoRef }: any) {
-
   const [playing, setPlaying] = useState(true)
   const [muted, setMuted] = useState(true)
   const [progress, setProgress] = useState(0)
 
+  const video = videoRef?.current
+
   function togglePlay() {
-    const video = videoRef.current
     if (!video) return
 
     if (video.paused) {
@@ -22,7 +22,6 @@ export default function VideoOverlay({ videoRef }: any) {
   }
 
   function toggleMute() {
-    const video = videoRef.current
     if (!video) return
 
     video.muted = !video.muted
@@ -30,12 +29,9 @@ export default function VideoOverlay({ videoRef }: any) {
   }
 
   useEffect(() => {
-
-    const video = videoRef.current
     if (!video) return
 
     video.muted = true
-    video.play()
 
     const updateProgress = () => {
       if (!video.duration) return
@@ -47,57 +43,45 @@ export default function VideoOverlay({ videoRef }: any) {
     return () => {
       video.removeEventListener("timeupdate", updateProgress)
     }
-
-  }, [videoRef])
+  }, [video])
 
   return (
-    <>
+    <div className="absolute inset-0 pointer-events-none">
 
-      {/* Play / Pause Button */}
-
+      {/* PLAY / PAUSE */}
       <button
         onClick={togglePlay}
-        className="absolute top-6 left-6 text-white text-3xl z-20"
+        className="absolute top-6 left-6 text-white text-3xl pointer-events-auto"
       >
         {playing ? "❚❚" : "▶"}
       </button>
 
+      {/* MUTE / UNMUTE */}
+      <button
+        onClick={toggleMute}
+        className="absolute top-6 right-6 text-white text-2xl pointer-events-auto"
+      >
+        {muted ? "🔇" : "🔊"}
+      </button>
 
-      {/* Mute Button */}
-
-      {!muted && (
-        <button
-          onClick={toggleMute}
-          className="absolute top-6 right-6 text-white text-2xl z-20"
-        >
-          🔊
-        </button>
-      )}
-
-
-      {/* Hear Sound Overlay */}
-
+      {/* HEAR SOUND BUTTON */}
       {muted && (
         <button
           onClick={toggleMute}
-          className="absolute inset-0 flex items-center justify-center text-white text-xl font-semibold z-10"
+          className="absolute inset-0 flex items-center justify-center text-white text-xl font-semibold pointer-events-auto"
         >
           Hear Sound
         </button>
       )}
 
-
-      {/* Timeline */}
-
+      {/* TIMELINE */}
       <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20">
-
         <div
           className="h-full bg-white"
           style={{ width: `${progress}%` }}
         />
-
       </div>
 
-    </>
+    </div>
   )
 }
