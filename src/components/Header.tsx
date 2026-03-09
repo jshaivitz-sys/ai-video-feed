@@ -30,6 +30,17 @@ export default function Header() {
         {/* Right side */}
         <div className="flex items-center gap-4 text-sm">
 
+          {/* BOTFLIX LIVE */}
+          <a
+            href="https://www.youtube.com/@botflixtvhq/live"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-white font-semibold hover:text-red-400 transition"
+          >
+            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+            Botflix LIVE
+          </a>
+
           <Link
             href="/terms"
             className="text-zinc-400 hover:text-white transition"
