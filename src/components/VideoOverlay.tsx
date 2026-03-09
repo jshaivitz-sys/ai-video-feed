@@ -4,12 +4,11 @@ import { useEffect, useState } from "react"
 
 export default function VideoOverlay({
   video,
-  toggleLike
+  toggleLike,
 }: {
   video: any
   toggleLike: (video: any) => void
 }) {
-
   const [playing, setPlaying] = useState(true)
   const [muted, setMuted] = useState(true)
   const [progress, setProgress] = useState(0)
@@ -19,7 +18,6 @@ export default function VideoOverlay({
   }
 
   function togglePlay(e: any) {
-
     e.stopPropagation()
 
     const v = getVideo(e.currentTarget)
@@ -32,11 +30,9 @@ export default function VideoOverlay({
       v.pause()
       setPlaying(false)
     }
-
   }
 
   function toggleVolume(e: any) {
-
     e.stopPropagation()
 
     const v = getVideo(e.currentTarget)
@@ -44,11 +40,9 @@ export default function VideoOverlay({
 
     v.muted = !v.muted
     setMuted(v.muted)
-
   }
 
   function unmute(e: any) {
-
     e.stopPropagation()
 
     const v = getVideo(e.currentTarget)
@@ -57,73 +51,57 @@ export default function VideoOverlay({
     v.muted = false
     v.volume = 1
     setMuted(false)
-
   }
 
   function updateProgress(e: any) {
-
-    const v = e.target
-    const percent = (v.currentTime / v.duration) * 100
+    const v = e.target as HTMLVideoElement
+    const percent = v.duration ? (v.currentTime / v.duration) * 100 : 0
     setProgress(percent)
-
   }
 
   function scrub(e: any) {
-
     const timeline = e.currentTarget
     const v = getVideo(timeline)
-    if (!v) return
+    if (!v || !v.duration) return
 
     const rect = timeline.getBoundingClientRect()
-    const percent = (e.clientX - rect.left) / rect.width
+    const clientX =
+      e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX
+
+    const rawPercent = (clientX - rect.left) / rect.width
+    const percent = Math.max(0, Math.min(1, rawPercent))
 
     v.currentTime = percent * v.duration
-
   }
 
   useEffect(() => {
-
     const videos = document.querySelectorAll("video")
 
-    videos.forEach(v => {
+    videos.forEach((v) => {
       v.addEventListener("timeupdate", updateProgress)
     })
 
     return () => {
-      videos.forEach(v => {
+      videos.forEach((v) => {
         v.removeEventListener("timeupdate", updateProgress)
       })
     }
-
   }, [])
 
   return (
-
-    <div className="absolute inset-0 flex flex-col justify-end">
-
-      {/* Floating Unmute Button */}
-
+    <div className="absolute inset-0 flex flex-col justify-end z-10 pointer-events-none">
       {muted && (
-
-        <div className="absolute inset-0 flex items-center justify-center">
-
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
           <button
             onClick={unmute}
             className="bg-black/70 text-white px-5 py-3 rounded-lg text-lg backdrop-blur"
           >
             🔊 Hear Sound
           </button>
-
         </div>
-
       )}
 
-      {/* Bottom Controls */}
-
-      <div className="p-4 space-y-2">
-
-        {/* Timeline */}
-
+      <div className="p-4 space-y-2 pointer-events-auto">
         <div
           onMouseDown={scrub}
           onTouchStart={scrub}
@@ -135,36 +113,18 @@ export default function VideoOverlay({
           />
         </div>
 
-        {/* Controls Row */}
-
         <div className="flex items-center justify-between text-white">
-
           <div className="flex items-center gap-4">
-
-            {/* Play / Pause */}
-
-            <button
-              onClick={togglePlay}
-              className="text-white text-xl"
-            >
+            <button onClick={togglePlay} className="text-white text-xl">
               {playing ? "❚❚" : "▶"}
             </button>
 
-            {/* Volume */}
-
-            <button
-              onClick={toggleVolume}
-              className="text-white text-xl"
-            >
+            <button onClick={toggleVolume} className="text-white text-xl">
               {muted ? "🔇" : "🔊"}
             </button>
-
           </div>
 
           <div className="flex items-center gap-6">
-
-            {/* Like */}
-
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -175,20 +135,10 @@ export default function VideoOverlay({
               ❤️
             </button>
 
-            {/* Swipe Arrow */}
-
-            <div className="text-white text-xl opacity-70">
-              ↓
-            </div>
-
+            <div className="text-white text-xl opacity-70">↓</div>
           </div>
-
         </div>
-
       </div>
-
     </div>
-
   )
-
 }
