@@ -27,6 +27,12 @@ export default function UploadPage(){
 
     const { data:{ user } } = await supabase.auth.getUser()
 
+    if(!user){
+      alert("You must be logged in to upload")
+      setUploading(false)
+      return
+    }
+
     const fileName = `${Date.now()}-${file.name}`
 
     const { error } = await supabase.storage
@@ -52,7 +58,7 @@ export default function UploadPage(){
         caption,
         created_by:createdBy,
         model,
-        user_id:user?.id
+        user_id:user.id
       })
 
     alert("Uploaded!")
