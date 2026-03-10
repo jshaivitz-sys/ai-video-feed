@@ -105,7 +105,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
       {/* VIDEO META (Created By + Model) */}
 
       {video && (
-        <div className="absolute bottom-5 left-6 text-white text-xs space-y-1 pointer-events-none">
+        <div className="absolute bottom-25 left-6 text-white text-xs space-y-1 pointer-events-none">
 
 
 
