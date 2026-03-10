@@ -21,7 +21,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
     const container = el.closest(".video-container")
     if (!container) return null
 
-    return container.querySelector("video")
+    return container.querySelector("video") as HTMLVideoElement | null
   }
 
   function togglePlay(e:any){
@@ -56,7 +56,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
     const confirmDelete = confirm("Delete this video?")
     if(!confirmDelete) return
 
-    const fileName = video.video_url.split("/").pop()
+    const fileName = video.video_url.split("/").pop() || ""
 
     await supabase.storage
       .from("videos")
@@ -74,7 +74,9 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
     const videos = document.querySelectorAll("video")
 
-    videos.forEach(video=>{
+    videos.forEach(v=>{
+
+      const video = v as HTMLVideoElement
 
       const update=()=>{
 
@@ -95,18 +97,18 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
     <div className="absolute inset-0 z-20 pointer-events-none">
 
-      {/* DELETE BUTTON (only owner) */}
+      {/* DELETE BUTTON */}
 
       {video && user && video.user_id === user.id && (
         <button
           onClick={deleteVideo}
-          className="absolute top-6 right-6 text-white text-2xl pointer-events-auto"
+          className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
         >
           🗑
         </button>
       )}
 
-      {/* PLAY / PAUSE */}
+      {/* PLAY */}
 
       <button
         onClick={togglePlay}
@@ -115,8 +117,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         {playing ? "❚❚" : "▶"}
       </button>
 
-
-      {/* MUTE / UNMUTE */}
+      {/* MUTE */}
 
       <button
         onClick={toggleMute}
@@ -125,8 +126,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         {muted ? "🔇" : "🔊"}
       </button>
 
-
-      {/* HEAR SOUND OVERLAY */}
+      {/* HEAR SOUND */}
 
       {muted && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -141,11 +141,10 @@ export default function VideoOverlay({ video }: { video?: any }) {
         </div>
       )}
 
-
-      {/* VIDEO META (Model) */}
+      {/* MODEL */}
 
       {video && (
-        <div className="absolute bottom-19 left-6 text-white text-xs space-y-1 pointer-events-none">
+        <div className="absolute bottom-20 left-6 text-white text-xs space-y-1 pointer-events-none">
 
           {video.model && (
             <div>
@@ -156,14 +155,13 @@ export default function VideoOverlay({ video }: { video?: any }) {
         </div>
       )}
 
-
       {/* TIMELINE */}
 
       <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20 pointer-events-none">
 
         <div
           className="h-full bg-white transition-all"
-          style={{width:`${progress}%`}}
+          style={{ width: progress + "%" }}
         />
 
       </div>
