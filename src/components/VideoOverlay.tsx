@@ -107,11 +107,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
       {video && (
         <div className="absolute bottom-14 left-6 text-white text-xs space-y-1 pointer-events-none">
 
-          {video.created_by && (
-            <div>
-              Created By: {video.created_by}
-            </div>
-          )}
+
 
           {video.model && (
             <div>
