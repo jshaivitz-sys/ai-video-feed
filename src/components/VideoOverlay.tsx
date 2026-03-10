@@ -21,7 +21,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
     const container = el.closest(".video-container")
     if (!container) return null
 
-    return container.querySelector("video") as HTMLVideoElement | null
+    return container.querySelector("video")
   }
 
   function togglePlay(e:any){
@@ -56,7 +56,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
     const confirmDelete = confirm("Delete this video?")
     if(!confirmDelete) return
 
-    const fileName = video.video_url.split("/").pop() || ""
+    const fileName = video.video_url.split("/").pop()
 
     await supabase.storage
       .from("videos")
@@ -74,9 +74,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
     const videos = document.querySelectorAll("video")
 
-    videos.forEach(v=>{
-
-      const video = v as HTMLVideoElement
+    videos.forEach(video=>{
 
       const update=()=>{
 
@@ -108,7 +106,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         </button>
       )}
 
-      {/* PLAY */}
+      {/* PLAY / PAUSE */}
 
       <button
         onClick={togglePlay}
@@ -117,7 +115,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         {playing ? "❚❚" : "▶"}
       </button>
 
-      {/* MUTE */}
+      {/* MUTE / UNMUTE */}
 
       <button
         onClick={toggleMute}
@@ -141,7 +139,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         </div>
       )}
 
-      {/* MODEL */}
+      {/* VIDEO META */}
 
       {video && (
         <div className="absolute bottom-20 left-6 text-white text-xs space-y-1 pointer-events-none">
@@ -161,7 +159,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
         <div
           className="h-full bg-white transition-all"
-          style={{ width: progress + "%" }}
+          style={{ width: `${progress}%` }}
         />
 
       </div>
