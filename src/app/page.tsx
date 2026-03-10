@@ -13,12 +13,19 @@ export default function Home() {
   const [page,setPage] = useState(0)
   const [loading,setLoading] = useState(false)
   const [hasMore,setHasMore] = useState(true)
+  const [user,setUser] = useState<any>(null)
 
   const observerRef = useRef<IntersectionObserver | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(()=>{
     fetchVideos(0,true)
+  },[])
+
+  useEffect(()=>{
+    supabase.auth.getUser().then(({data})=>{
+      setUser(data.user)
+    })
   },[])
 
   useEffect(()=>{
@@ -201,7 +208,7 @@ export default function Home() {
               className="h-full w-full object-cover"
             />
 
-            <VideoOverlay video={video}/>
+            <VideoOverlay video={video} user={user}/>
 
             <div className="absolute right-6 bottom-32 flex flex-col items-center z-50">
 

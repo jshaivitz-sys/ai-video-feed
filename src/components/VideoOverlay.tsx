@@ -3,20 +3,13 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 
-export default function VideoOverlay({ video }: { video?: any }) {
+export default function VideoOverlay(props:any) {
+
+  const { video, user } = props
 
   const [playing,setPlaying] = useState(true)
   const [muted,setMuted] = useState(true)
   const [progress,setProgress] = useState(0)
-  const [userId,setUserId] = useState<string | null>(null)
-
-  useEffect(()=>{
-    async function loadUser(){
-      const { data } = await supabase.auth.getUser()
-      setUserId(data.user?.id || null)
-    }
-    loadUser()
-  },[])
 
   function getVideo(el: HTMLElement): HTMLVideoElement | null {
 
@@ -99,7 +92,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
       {/* DELETE BUTTON */}
 
-      {video && userId && video.user_id === userId && (
+      {video && user && String(video.user_id) === String(user.id) && (
         <button
           onClick={deleteVideo}
           className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
@@ -126,7 +119,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         {muted ? "🔇" : "🔊"}
       </button>
 
-      {/* HEAR SOUND OVERLAY */}
+      {/* HEAR SOUND */}
 
       {muted && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -141,7 +134,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         </div>
       )}
 
-      {/* VIDEO META */}
+      {/* MODEL */}
 
       {video && (
         <div className="absolute bottom-20 left-6 text-white text-xs space-y-1 pointer-events-none">
