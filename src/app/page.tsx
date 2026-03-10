@@ -51,7 +51,7 @@ export default function Home() {
 
     const {data,error} = await supabase
       .from("videos")
-      .select("id,video_url,likes,created_by,model,caption,created_at")
+      .select("id,video_url,likes,created_by,model,caption,user_id,created_at")
       .order("created_at",{ascending:false})
       .range(from,to)
 

@@ -25,6 +25,8 @@ export default function UploadPage(){
 
     setUploading(true)
 
+    const { data:{ user } } = await supabase.auth.getUser()
+
     const fileName = `${Date.now()}-${file.name}`
 
     const { error } = await supabase.storage
@@ -49,7 +51,8 @@ export default function UploadPage(){
         video_url:videoUrl,
         caption,
         created_by:createdBy,
-        model
+        model,
+        user_id:user?.id
       })
 
     alert("Uploaded!")

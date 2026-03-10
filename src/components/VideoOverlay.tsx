@@ -1,12 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { supabase } from "../lib/supabase"
 
 export default function VideoOverlay({ video }: { video?: any }) {
 
   const [playing,setPlaying] = useState(true)
   const [muted,setMuted] = useState(true)
   const [progress,setProgress] = useState(0)
+  const [user,setUser] = useState<any>(null)
+
+  useEffect(()=>{
+    supabase.auth.getUser().then(({data})=>{
+      setUser(data.user)
+    })
+  },[])
 
   function getVideo(el: HTMLElement): HTMLVideoElement | null {
 
@@ -41,6 +49,27 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
   }
 
+  async function deleteVideo(){
+
+    if(!video) return
+
+    const confirmDelete = confirm("Delete this video?")
+    if(!confirmDelete) return
+
+    const fileName = video.video_url.split("/").pop()
+
+    await supabase.storage
+      .from("videos")
+      .remove([fileName])
+
+    await supabase
+      .from("videos")
+      .delete()
+      .eq("id",video.id)
+
+    window.location.reload()
+  }
+
   useEffect(()=>{
 
     const videos = document.querySelectorAll("video")
@@ -65,6 +94,17 @@ export default function VideoOverlay({ video }: { video?: any }) {
   return (
 
     <div className="absolute inset-0 z-20 pointer-events-none">
+
+      {/* DELETE BUTTON (only owner) */}
+
+      {video && user && video.user_id === user.id && (
+        <button
+          onClick={deleteVideo}
+          className="absolute top-6 right-6 text-white text-2xl pointer-events-auto"
+        >
+          🗑
+        </button>
+      )}
 
       {/* PLAY / PAUSE */}
 
@@ -102,12 +142,10 @@ export default function VideoOverlay({ video }: { video?: any }) {
       )}
 
 
-      {/* VIDEO META (Created By + Model) */}
+      {/* VIDEO META (Model) */}
 
       {video && (
         <div className="absolute bottom-19 left-6 text-white text-xs space-y-1 pointer-events-none">
-
-
 
           {video.model && (
             <div>
