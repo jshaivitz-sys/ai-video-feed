@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-export default function VideoOverlay() {
+export default function VideoOverlay({ video }: { video?: any }) {
 
   const [playing,setPlaying] = useState(true)
   const [muted,setMuted] = useState(true)
@@ -18,14 +18,14 @@ export default function VideoOverlay() {
 
   function togglePlay(e:any){
 
-    const video = getVideo(e.currentTarget)
-    if(!video) return
+    const videoEl = getVideo(e.currentTarget)
+    if(!videoEl) return
 
-    if(video.paused){
-      video.play()
+    if(videoEl.paused){
+      videoEl.play()
       setPlaying(true)
     } else {
-      video.pause()
+      videoEl.pause()
       setPlaying(false)
     }
 
@@ -33,11 +33,11 @@ export default function VideoOverlay() {
 
   function toggleMute(e:any){
 
-    const video = getVideo(e.currentTarget)
-    if(!video) return
+    const videoEl = getVideo(e.currentTarget)
+    if(!videoEl) return
 
-    video.muted = !video.muted
-    setMuted(video.muted)
+    videoEl.muted = !videoEl.muted
+    setMuted(videoEl.muted)
 
   }
 
@@ -97,6 +97,27 @@ export default function VideoOverlay() {
           >
             Hear Sound
           </button>
+
+        </div>
+      )}
+
+
+      {/* VIDEO META (Created By + Model) */}
+
+      {video && (
+        <div className="absolute bottom-14 left-6 text-white text-xs space-y-1 pointer-events-none">
+
+          {video.created_by && (
+            <div>
+              Created By: {video.created_by}
+            </div>
+          )}
+
+          {video.model && (
+            <div>
+              Model: {video.model}
+            </div>
+          )}
 
         </div>
       )}

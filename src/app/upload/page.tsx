@@ -8,6 +8,7 @@ export default function UploadPage(){
   const [file,setFile] = useState<File | null>(null)
   const [caption,setCaption] = useState("")
   const [createdBy,setCreatedBy] = useState("")
+  const [model,setModel] = useState("")
   const [uploading,setUploading] = useState(false)
 
   async function uploadVideo(){
@@ -47,7 +48,8 @@ export default function UploadPage(){
       .insert({
         video_url:videoUrl,
         caption,
-        created_by:createdBy
+        created_by:createdBy,
+        model
       })
 
     alert("Uploaded!")
@@ -55,6 +57,7 @@ export default function UploadPage(){
     setFile(null)
     setCaption("")
     setCreatedBy("")
+    setModel("")
     setUploading(false)
 
   }
@@ -74,6 +77,14 @@ export default function UploadPage(){
           placeholder="Created By"
           value={createdBy}
           onChange={(e)=>setCreatedBy(e.target.value)}
+          className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded"
+        />
+
+        <input
+          type="text"
+          placeholder="Model"
+          value={model}
+          onChange={(e)=>setModel(e.target.value)}
           className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded"
         />
 
