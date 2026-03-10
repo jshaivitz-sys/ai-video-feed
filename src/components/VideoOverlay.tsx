@@ -10,16 +10,13 @@ export default function VideoOverlay(props:any){
   const [playing,setPlaying] = useState(true)
   const [muted,setMuted] = useState(true)
   const [progress,setProgress] = useState(0)
-  const [user,setUser] = useState<any>(undefined)
+  const [user,setUser] = useState<any>(null)
 
   useEffect(()=>{
     supabase.auth.getUser().then(({data})=>{
       setUser(data.user)
     })
   },[])
-
-  // IMPORTANT: wait until auth resolves
-  if(user === undefined) return null
 
   function getVideo(el: HTMLElement): HTMLVideoElement | null {
 
