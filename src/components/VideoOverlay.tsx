@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 
-export default function VideoOverlay(props:any) {
+export default function VideoOverlay(props:any){
 
   const { video, user } = props
 
@@ -63,6 +63,7 @@ export default function VideoOverlay(props:any) {
       .eq("id",video.id)
 
     window.location.reload()
+
   }
 
   useEffect(()=>{
@@ -92,7 +93,7 @@ export default function VideoOverlay(props:any) {
 
       {/* DELETE BUTTON */}
 
-      {video && user && String(video.user_id) === String(user.id) && (
+      {video && user && video.user_id === user.id && (
         <button
           onClick={deleteVideo}
           className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
@@ -101,7 +102,7 @@ export default function VideoOverlay(props:any) {
         </button>
       )}
 
-      {/* PLAY / PAUSE */}
+      {/* PLAY */}
 
       <button
         onClick={togglePlay}
@@ -110,7 +111,7 @@ export default function VideoOverlay(props:any) {
         {playing ? "❚❚" : "▶"}
       </button>
 
-      {/* MUTE / UNMUTE */}
+      {/* MUTE */}
 
       <button
         onClick={toggleMute}
