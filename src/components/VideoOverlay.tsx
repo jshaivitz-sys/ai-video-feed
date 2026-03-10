@@ -8,6 +8,15 @@ export default function VideoOverlay({ video }: { video?: any }) {
   const [playing,setPlaying] = useState(true)
   const [muted,setMuted] = useState(true)
   const [progress,setProgress] = useState(0)
+  const [userId,setUserId] = useState<string | null>(null)
+
+  useEffect(()=>{
+    async function loadUser(){
+      const { data } = await supabase.auth.getUser()
+      setUserId(data.user?.id || null)
+    }
+    loadUser()
+  },[])
 
   function getVideo(el: HTMLElement): HTMLVideoElement | null {
 
@@ -42,6 +51,27 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
   }
 
+  async function deleteVideo(){
+
+    if(!video) return
+
+    const confirmDelete = confirm("Delete this video?")
+    if(!confirmDelete) return
+
+    const fileName = video.video_url.split("/").pop() || ""
+
+    await supabase.storage
+      .from("videos")
+      .remove([fileName])
+
+    await supabase
+      .from("videos")
+      .delete()
+      .eq("id",video.id)
+
+    window.location.reload()
+  }
+
   useEffect(()=>{
 
     const videos = document.querySelectorAll("video")
@@ -69,7 +99,14 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
       {/* DELETE BUTTON */}
 
-      {video && <DeleteButton video={video}/>}
+      {video && userId && video.user_id === userId && (
+        <button
+          onClick={deleteVideo}
+          className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
+        >
+          🗑
+        </button>
+      )}
 
       {/* PLAY / PAUSE */}
 
@@ -104,7 +141,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         </div>
       )}
 
-      {/* MODEL META */}
+      {/* VIDEO META */}
 
       {video && (
         <div className="absolute bottom-20 left-6 text-white text-xs space-y-1 pointer-events-none">
@@ -124,67 +161,12 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
         <div
           className="h-full bg-white transition-all"
-          style={{width:`${progress}%`}}
+          style={{ width: `${progress}%` }}
         />
 
       </div>
 
     </div>
 
-  )
-}
-
-
-
-function DeleteButton({ video }: { video:any }){
-
-  const [canDelete,setCanDelete] = useState(false)
-
-  useEffect(()=>{
-
-    async function checkUser(){
-
-      const { data:{ user } } = await supabase.auth.getUser()
-
-      if(!user) return
-
-      if(String(video.user_id) === String(user.id)){
-        setCanDelete(true)
-      }
-
-    }
-
-    checkUser()
-
-  },[video])
-
-  async function deleteVideo(){
-
-    const confirmDelete = confirm("Delete this video?")
-    if(!confirmDelete) return
-
-    const fileName = video.video_url.split("/").pop() || ""
-
-    await supabase.storage
-      .from("videos")
-      .remove([fileName])
-
-    await supabase
-      .from("videos")
-      .delete()
-      .eq("id",video.id)
-
-    window.location.reload()
-  }
-
-  if(!canDelete) return null
-
-  return (
-    <button
-      onClick={deleteVideo}
-      className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
-    >
-      🗑
-    </button>
   )
 }
