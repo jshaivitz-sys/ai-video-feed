@@ -51,7 +51,7 @@ export default function Home() {
 
     const {data,error} = await supabase
       .from("videos")
-      .select("id,video_url,likes,created_by,caption,created_at")
+      .select("id,video_url,likes,created_by,model,caption,created_at")
       .order("created_at",{ascending:false})
       .range(from,to)
 
@@ -201,7 +201,7 @@ export default function Home() {
               className="h-full w-full object-cover"
             />
 
-            <VideoOverlay/>
+            <VideoOverlay video={video}/>
 
             <div className="absolute right-6 bottom-32 flex flex-col items-center z-50">
 
