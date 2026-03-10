@@ -91,16 +91,16 @@ export default function VideoOverlay(props:any){
 
     <div className="absolute inset-0 z-20 pointer-events-none">
 
-      {/* DELETE BUTTON */}
+{/* DELETE BUTTON */}
 
-      {video && user && String(video.user_id) === String(user.id) && (
-        <button
-          onClick={deleteVideo}
-          className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
-        >
-          🗑
-        </button>
-      )}
+{video && user && (
+  <button
+    onClick={deleteVideo}
+    className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
+  >
+    🗑
+  </button>
+)}
 
       {/* PLAY */}
 
