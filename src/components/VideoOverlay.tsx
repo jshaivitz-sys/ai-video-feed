@@ -10,13 +10,16 @@ export default function VideoOverlay(props:any){
   const [playing,setPlaying] = useState(true)
   const [muted,setMuted] = useState(true)
   const [progress,setProgress] = useState(0)
-  const [user,setUser] = useState<any>(null)
+  const [user,setUser] = useState<any>(undefined)
 
   useEffect(()=>{
     supabase.auth.getUser().then(({data})=>{
       setUser(data.user)
     })
   },[])
+
+  // IMPORTANT: wait until auth resolves
+  if(user === undefined) return null
 
   function getVideo(el: HTMLElement): HTMLVideoElement | null {
 
@@ -100,7 +103,7 @@ export default function VideoOverlay(props:any){
 
       {/* DELETE BUTTON */}
 
-      {video && user && String(video.user_id) === String(user.id) && (
+      {video && user && video.user_id === user.id && (
         <button
           onClick={deleteVideo}
           className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
