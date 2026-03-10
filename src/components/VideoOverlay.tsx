@@ -56,7 +56,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
     const confirmDelete = confirm("Delete this video?")
     if(!confirmDelete) return
 
-    const fileName = video.video_url.split("/").pop()
+    const fileName = video.video_url.split("/").pop() || ""
 
     await supabase.storage
       .from("videos")
@@ -95,9 +95,9 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
     <div className="absolute inset-0 z-20 pointer-events-none">
 
-      {/* DELETE BUTTON */}
+      {/* DELETE BUTTON (only owner) */}
 
-      {video && user && video.user_id === user.id && (
+      {video && user && String(video.user_id) === String(user.id) && (
         <button
           onClick={deleteVideo}
           className="absolute top-6 right-6 text-white text-2xl pointer-events-auto z-50"
@@ -124,7 +124,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         {muted ? "🔇" : "🔊"}
       </button>
 
-      {/* HEAR SOUND */}
+      {/* HEAR SOUND OVERLAY */}
 
       {muted && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -139,7 +139,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
         </div>
       )}
 
-      {/* VIDEO META */}
+      {/* VIDEO META (Model) */}
 
       {video && (
         <div className="absolute bottom-20 left-6 text-white text-xs space-y-1 pointer-events-none">
@@ -159,7 +159,7 @@ export default function VideoOverlay({ video }: { video?: any }) {
 
         <div
           className="h-full bg-white transition-all"
-          style={{ width: `${progress}%` }}
+          style={{width:`${progress}%`}}
         />
 
       </div>
